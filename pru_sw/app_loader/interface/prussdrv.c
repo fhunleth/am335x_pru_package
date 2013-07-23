@@ -303,7 +303,7 @@ int prussdrv_pru_disable(unsigned int prunum)
 
 int prussdrv_pru_write_memory(unsigned int pru_ram_id,
                               unsigned int wordoffset,
-                              unsigned int *memarea,
+                              const unsigned int *memarea,
                               unsigned int bytelength)
 {
     unsigned int *pruramarea, i, wordlength;
@@ -587,7 +587,7 @@ int prussdrv_exit()
     return 0;
 }
 
-int prussdrv_exec_program(int prunum, char *filename)
+int prussdrv_exec_program(int prunum, const char *filename)
 {
     FILE *fPtr;
     unsigned char fileDataArray[PRUSS_MAX_IRAM_SIZE];

@@ -119,7 +119,7 @@ extern "C" {
 
     int prussdrv_pru_write_memory(unsigned int pru_ram_id,
                                   unsigned int wordoffset,
-                                  unsigned int *memarea,
+                                  const unsigned int *memarea,
                                   unsigned int bytelength);
 
     int prussdrv_pruintc_init(tpruss_intc_initdata * prussintc_init_data);
@@ -148,7 +148,7 @@ extern "C" {
 
     int prussdrv_exit(void);
 
-    int prussdrv_exec_program(int prunum, char *filename);
+    int prussdrv_exec_program(int prunum, const char *filename);
 
     int prussdrv_start_irqthread(unsigned int pru_evtout_num, int priority,
                                  prussdrv_function_handler irqhandler);
