@@ -173,13 +173,13 @@ int main(void)
     printf("\tINFO: Waiting for HALT command.\r\n");
     prussdrv_pru_wait_event (PRU_EVTOUT_0, &event_count);
     printf("\tINFO: PRU0 completed transfer.\r\n");
-    prussdrv_pru_clear_event (PRU0_ARM_INTERRUPT);
+    prussdrv_pru_clear_event (PRU0_ARM_INTERRUPT, PRU_EVTOUT_0);
 
     /* Wait until PRU0 has finished execution */
     printf("\t\tINFO: Waiting for HALT command.\r\n");
     prussdrv_pru_wait_event (PRU_EVTOUT_1, &event_count);
     printf("\t\tINFO: PRU1 completed transfer.\r\n");
-    prussdrv_pru_clear_event (PRU1_ARM_INTERRUPT);
+    prussdrv_pru_clear_event (PRU1_ARM_INTERRUPT, PRU_EVTOUT_1);
 
     /* Check if example passed */
     if ( LOCAL_examplePassed(PRU_NUM1) )

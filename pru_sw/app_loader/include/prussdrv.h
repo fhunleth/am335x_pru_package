@@ -145,9 +145,9 @@ extern "C" {
 
     int prussdrv_pru_event_fd(unsigned int pru_evtout_num);
 
-    int prussdrv_pru_send_event(unsigned int eventnum);
+    int prussdrv_pru_send_event(unsigned int pru_evtout_num);
 
-    int prussdrv_pru_clear_event(unsigned int eventnum);
+    int prussdrv_pru_clear_event(unsigned int eventnum, unsigned int pru_evtout_num);
 
     int prussdrv_pru_send_wait_clear_event(unsigned int send_eventnum,
                                            unsigned int pru_evtout_num,

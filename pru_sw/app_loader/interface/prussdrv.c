@@ -423,12 +423,10 @@ int prussdrv_pru_send_event(unsigned int eventnum)
 int prussdrv_pru_wait_event(unsigned int pru_evtout_num, int *event_count)
 {
     int retval;
-    unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     retval = read(prussdrv.fd[pru_evtout_num], event_count, sizeof(int));
     if (retval < 0)
 	DEBUG_PRINTF("prussdrv_pru_wait_event: read returned %d - %s\n", retval, strerror(errno));
 
-    pruintc_io[PRU_INTC_HIEISR_REG >> 2] = pru_evtout_num+2;
     return retval;
 }
 
@@ -437,13 +435,19 @@ int prussdrv_pru_event_fd(unsigned int pru_evtout_num)
     return prussdrv.fd[pru_evtout_num];
 }
 
-int prussdrv_pru_clear_event(unsigned int eventnum)
+int prussdrv_pru_clear_event(unsigned int eventnum, unsigned int pru_evtout_num)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
+
+    // Clear the event.
     if (eventnum < 32)
         pruintc_io[PRU_INTC_SECR1_REG >> 2] = 1 << eventnum;
     else
         pruintc_io[PRU_INTC_SECR2_REG >> 2] = 1 << (eventnum - 32);
+
+    // Re-enable the interrupt
+    pruintc_io[PRU_INTC_HIEISR_REG >> 2] = pru_evtout_num + 2;
+
     return 0;
 }
 
@@ -454,7 +458,7 @@ int prussdrv_pru_send_wait_clear_event(unsigned int send_eventnum,
     int event_count;
     prussdrv_pru_send_event(send_eventnum);
     prussdrv_pru_wait_event(pru_evtout_num, &event_count);
-    prussdrv_pru_clear_event(ack_eventnum);
+    prussdrv_pru_clear_event(ack_eventnum, pru_evtout_num);
     return 0;
 }
 
