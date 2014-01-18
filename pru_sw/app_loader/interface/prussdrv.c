@@ -432,6 +432,11 @@ int prussdrv_pru_wait_event(unsigned int pru_evtout_num, int *event_count)
     return retval;
 }
 
+int prussdrv_pru_event_fd(unsigned int pru_evtout_num)
+{
+    return prussdrv.fd[pru_evtout_num];
+}
+
 int prussdrv_pru_clear_event(unsigned int eventnum)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
