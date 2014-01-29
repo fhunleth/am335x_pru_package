@@ -140,6 +140,12 @@ extern "C" {
      */
     short prussdrv_get_event_to_channel_map( unsigned int eventnum );
 
+    /** Lookup, from the specified interrupt controller configuration, which
+     * channel a given event should be mapped to.
+     */
+    short prussdrv_lookup_event_to_channel( const tpruss_intc_initdata *intc_data,
+                                            unsigned int eventnum );
+
     /** Find and return the host interrupt line a specified channel is mapped
      * to.  Note that this only searches for the first host interrupt line
      * mapped and will not detect error cases where a channel is mapped
@@ -149,12 +155,24 @@ extern "C" {
      */
     short prussdrv_get_channel_to_host_map( unsigned int channel );
 
+    /** Lookup, from the specified interrupt controller configuration, which
+     * host interrupt line a given channel should be mapped to.
+     */
+    short prussdrv_lookup_channel_to_host( const tpruss_intc_initdata *intc_data,
+                                           unsigned int channel );
+
     /** Find and return the host interrupt line a specified event is mapped
      * to.  This first finds the intermediate channel and then the host.
      * @return host-interrupt-line to which a system event is mapped.
      * @return -1 for no mapping found
      */
     short prussdrv_get_event_to_host_map( unsigned int eventnum );
+
+    /** Lookup, from the specified interrupt controller configuration, which
+     * host interrupt line a given event should be mapped to.
+     */
+    short prussdrv_lookup_event_to_host( const tpruss_intc_initdata *intc_data,
+                                         unsigned int eventnum );
 
     int prussdrv_map_l3mem(void **address);
 
@@ -172,18 +190,44 @@ extern "C" {
 
     /** Wait for the specified host interrupt.
      * @return the number of times the event has happened. */
-    unsigned int prussdrv_pru_wait_event(unsigned int host_interrupt);
+    unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt);
+
+    /** Wait for the specified host interrupt.
+     * @return the number of times the event has happened. */
+    unsigned int prussdrv_pru_wait_event(unsigned int sysevent);
 
     int prussdrv_pru_event_fd(unsigned int host_interrupt);
 
     int prussdrv_pru_send_event(unsigned int eventnum);
 
-    /** Clear the specified event and re-enable the host interrupt. */
-    int prussdrv_pru_clear_event(unsigned int host_interrupt,
-                                 unsigned int sysevent);
+    /** Clear the specified event.
+     * Does not reset the host interrupt.
+     * @see pruss_pru_reset_event
+     * @see pruss_pru_reset_interrupt
+     */
+    int prussdrv_pru_clear_event(unsigned int sysevent);
 
-    int prussdrv_pru_send_wait_clear_event(unsigned int send_eventnum,
-                                           unsigned int host_interrupt,
+    /** Reset the host interrupt.
+     * Does not clear the system event that caused the interrupt.
+     *
+     * Generally, this should be done _after_ the system event that caused the
+     * interrupt has been cleared (i.e. via prussdrv_pru_clear_event).
+     *
+     * @see pruss_pru_clear_event
+     * @see pruss_pru_reset_event
+     */
+    int prussdrv_pru_reset_interrupt(unsigned int host_interrupt);
+
+    /** Clear the specified event and reset the associated interrupt.
+     * Simplified event/interrupt clear/reset routine that does:
+     *    1. pruss_pru_clear_event(sysevent)
+     *    2. pruss_pru_reset_interrupt( get_interrupt(sysevent) )
+     * @see pruss_pru_clear_event
+     * @see pruss_pru_reset_interrupt
+     */
+    int prussdrv_pru_reset_event(unsigned int sysevent);
+
+    int prussdrv_pru_send_wait_reset_event(unsigned int send_eventnum,
                                            unsigned int ack_eventnum);
 
     int prussdrv_exit(void);

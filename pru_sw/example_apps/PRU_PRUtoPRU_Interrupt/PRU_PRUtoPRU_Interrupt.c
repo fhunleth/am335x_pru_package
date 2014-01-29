@@ -139,7 +139,9 @@ int main(void)
     prussdrv_init ();
 
     /* Open PRU Interrupt */
-    ret = prussdrv_open(PRU_EVTOUT_0);
+    ret = prussdrv_open(
+      prussdrv_lookup_event_to_host(&pruss_intc_initdata, PRU0_ARM_INTERRUPT)
+    );
     if (ret)
     {
         printf("prussdrv_open open failed\n");
@@ -147,7 +149,9 @@ int main(void)
     }
 
     /* Open PRU Interrupt */
-    ret = prussdrv_open(PRU_EVTOUT_1);
+    ret = prussdrv_open(
+      prussdrv_lookup_event_to_host(&pruss_intc_initdata, PRU1_ARM_INTERRUPT)
+    );
     if (ret)
     {
         printf("prussdrv_open open failed\n");
@@ -170,15 +174,15 @@ int main(void)
 
     /* Wait until PRU0 has finished execution */
     printf("\tINFO: Waiting for HALT command.\r\n");
-    prussdrv_pru_wait_event (PRU_EVTOUT_0);
+    prussdrv_pru_wait_event (PRU0_ARM_INTERRUPT);
     printf("\tINFO: PRU0 completed transfer.\r\n");
-    prussdrv_pru_clear_event (PRU_EVTOUT_0, PRU0_ARM_INTERRUPT);
+    prussdrv_pru_reset_event (PRU0_ARM_INTERRUPT);
 
     /* Wait until PRU0 has finished execution */
     printf("\t\tINFO: Waiting for HALT command.\r\n");
-    prussdrv_pru_wait_event (PRU_EVTOUT_1);
+    prussdrv_pru_wait_event (PRU1_ARM_INTERRUPT);
     printf("\t\tINFO: PRU1 completed transfer.\r\n");
-    prussdrv_pru_clear_event (PRU_EVTOUT_1, PRU1_ARM_INTERRUPT);
+    prussdrv_pru_reset_event (PRU1_ARM_INTERRUPT);
 
     /* Check if example passed */
     if ( LOCAL_examplePassed(PRU_NUM1) )
