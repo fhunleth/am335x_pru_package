@@ -190,6 +190,8 @@ extern "C" {
 
     int prussdrv_exec_program(int prunum, const char *filename);
 
+    int prussdrv_exec_code(int prunum, const unsigned int *code, int codelen);
+
 #if defined (__cplusplus)
 }
 #endif
