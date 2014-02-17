@@ -378,7 +378,7 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
                             channel);
     }
     for (i = 0; i < (NUM_PRU_HOSTS + 3) >> 2; i++)
-        pruintc_io[(PRU_INTC_HMR1_REG >> 2) + i] = 0;
+        pruintc_io[(PRU_INTC_HMR0_REG >> 2) + i] = 0;
     for (i = 0;
          ((prussintc_init_data->channel_to_host_map[i].channel != -1)
           && (prussintc_init_data->channel_to_host_map[i].host != -1));

@@ -148,9 +148,9 @@
 #define PRU_INTC_CMR15_REG   0x438
 #define PRU_INTC_CMR16_REG   0x43C
 
-#define PRU_INTC_HMR1_REG    0x800
-#define PRU_INTC_HMR2_REG    0x804
-#define PRU_INTC_HMR3_REG    0x808
+#define PRU_INTC_HMR0_REG    0x800
+#define PRU_INTC_HMR1_REG    0x804
+#define PRU_INTC_HMR2_REG    0x808
 
 #define PRU_INTC_SIPR1_REG   0xD00
 #define PRU_INTC_SIPR2_REG   0xD04
@@ -268,8 +268,8 @@ void __prussintc_set_cmr(unsigned int *pruintc_io, unsigned short sysevt,
 void __prussintc_set_hmr(unsigned int *pruintc_io, unsigned short channel,
                          unsigned short host)
 {
-    pruintc_io[(PRU_INTC_HMR1_REG + (channel & ~(0x3))) >> 2] =
-        pruintc_io[(PRU_INTC_HMR1_REG +
+    pruintc_io[(PRU_INTC_HMR0_REG + (channel & ~(0x3))) >> 2] =
+        pruintc_io[(PRU_INTC_HMR0_REG +
                     (channel & ~(0x3))) >> 2] | (((host) & 0xF) <<
                                                  (((channel) & 0x3) << 3));
 
