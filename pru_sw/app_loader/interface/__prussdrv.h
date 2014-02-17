@@ -161,8 +161,6 @@
 #define PRU_INTC_HIER_REG    0x1500
 
 
-#define MAX_HOSTS_SUPPORTED	10
-
 //UIO driver expects user space to map PRUSS_UIO_MAP_OFFSET_XXX to
 //access corresponding memory regions - region offset is N*PAGE_SIZE
 

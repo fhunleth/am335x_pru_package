@@ -45,22 +45,53 @@
  * ============================================================================
 */
 
-#define AM33XX
-#ifdef AM33XX
-#define PRU0_PRU1_INTERRUPT     17
-#define PRU1_PRU0_INTERRUPT     18
-#define PRU0_ARM_INTERRUPT      19
-#define PRU1_ARM_INTERRUPT      20
-#define ARM_PRU0_INTERRUPT      21
-#define ARM_PRU1_INTERRUPT      22
-#else
-#define PRU0_PRU1_INTERRUPT     32
-#define PRU1_PRU0_INTERRUPT     33
-#define PRU0_ARM_INTERRUPT      34
-#define PRU1_ARM_INTERRUPT      35
-#define ARM_PRU0_INTERRUPT      36
-#define ARM_PRU1_INTERRUPT      37
+#ifndef AM33XX
+  #define AM33XX
 #endif
+
+/** List of system events, or at least the ones we care about for now (those
+ * pru-related). */
+//{
+#ifdef AM33XX
+  #define PRU_EVENT_0     16
+  #define PRU_EVENT_1     17
+  #define PRU_EVENT_2     18
+  #define PRU_EVENT_3     19
+  #define PRU_EVENT_4     20
+  #define PRU_EVENT_5     21
+  #define PRU_EVENT_6     22
+  #define PRU_EVENT_7     23
+  #define PRU_EVENT_8     24
+  #define PRU_EVENT_9     25
+  #define PRU_EVENT_10    26
+  #define PRU_EVENT_11    27
+  #define PRU_EVENT_12    28
+  #define PRU_EVENT_13    29
+  #define PRU_EVENT_14    30
+  #define PRU_EVENT_15    31
+#else
+  #define PRU_EVENT_0     32
+  #define PRU_EVENT_1     33
+  #define PRU_EVENT_2     34
+  #define PRU_EVENT_3     35
+  #define PRU_EVENT_4     36
+  #define PRU_EVENT_5     37
+  //#define PRU_EVENT_6     38
+  //#define PRU_EVENT_7     39
+  //#define PRU_EVENT_8     40
+  //#define PRU_EVENT_9     41
+  //#define PRU_EVENT_10    42
+  //#define PRU_EVENT_11    43
+  //#define PRU_EVENT_12    44
+  //#define PRU_EVENT_13    45
+  //#define PRU_EVENT_14    46
+  //#define PRU_EVENT_15    47
+#endif
+//}
+
+
+/** List of INTC channels */
+//{
 #define CHANNEL0                0
 #define CHANNEL1                1
 #define CHANNEL2                2
@@ -71,34 +102,101 @@
 #define CHANNEL7                7
 #define CHANNEL8                8
 #define CHANNEL9                9
-
-#define PRU0                    0
-#define PRU1                    1
-#define PRU_EVTOUT0             2
-#define PRU_EVTOUT1             3
-#define PRU_EVTOUT2             4
-#define PRU_EVTOUT3             5
-#define PRU_EVTOUT4             6
-#define PRU_EVTOUT5             7
-#define PRU_EVTOUT6             8
-#define PRU_EVTOUT7             9
-
-#define PRU0_HOSTEN_MASK            0x0001
-#define PRU1_HOSTEN_MASK            0x0002
-#define PRU_EVTOUT0_HOSTEN_MASK     0x0004
-#define PRU_EVTOUT1_HOSTEN_MASK     0x0008
-#define PRU_EVTOUT2_HOSTEN_MASK     0x0010
-#define PRU_EVTOUT3_HOSTEN_MASK     0x0020
-#define PRU_EVTOUT4_HOSTEN_MASK     0x0040
-#define PRU_EVTOUT5_HOSTEN_MASK     0x0080
-#define PRU_EVTOUT6_HOSTEN_MASK     0x0100
-#define PRU_EVTOUT7_HOSTEN_MASK     0x0200
+//}
 
 
-#define PRUSS_INTC_INITDATA {   \
-{ PRU0_PRU1_INTERRUPT, PRU1_PRU0_INTERRUPT, PRU0_ARM_INTERRUPT, PRU1_ARM_INTERRUPT, ARM_PRU0_INTERRUPT, ARM_PRU1_INTERRUPT,  (char)-1  },  \
-{ {PRU0_PRU1_INTERRUPT,CHANNEL1}, {PRU1_PRU0_INTERRUPT, CHANNEL0}, {PRU0_ARM_INTERRUPT,CHANNEL2}, {PRU1_ARM_INTERRUPT, CHANNEL3}, {ARM_PRU0_INTERRUPT, CHANNEL0}, {ARM_PRU1_INTERRUPT, CHANNEL1},  {-1,-1}},  \
- {  {CHANNEL0,PRU0}, {CHANNEL1, PRU1}, {CHANNEL2, PRU_EVTOUT0}, {CHANNEL3, PRU_EVTOUT1}, {-1,-1} },  \
- (PRU0_HOSTEN_MASK | PRU1_HOSTEN_MASK | PRU_EVTOUT0_HOSTEN_MASK | PRU_EVTOUT1_HOSTEN_MASK) /*Enable PRU0, PRU1, PRU_EVTOUT0 */ \
+/** List of Host Interrupt lines */
+//{
+#define PRU_HOST_0              0
+#define PRU_HOST_1              1
+#define PRU_HOST_2              2
+#define PRU_HOST_3              3
+#define PRU_HOST_4              4
+#define PRU_HOST_5              5
+#define PRU_HOST_6              6
+#define PRU_HOST_7              7
+#define PRU_HOST_8              8
+#define PRU_HOST_9              9
+//}
+
+
+/** Host interrupts mapped back for PRU[01] use */
+//{
+#define PRU_INTERRUPT_R31_30    PRU_HOST_0
+#define PRU_INTERRUPT_R31_31    PRU_HOST_1
+//}
+
+
+/** Host interrupts exported to ARM
+ * @see pr1_host_intr[7:0], page 17
+ */
+//{
+#define PRU_HOST_INTR_0         PRU_HOST_2
+#define PRU_HOST_INTR_1         PRU_HOST_3
+#define PRU_HOST_INTR_2         PRU_HOST_4
+#define PRU_HOST_INTR_3         PRU_HOST_5
+#define PRU_HOST_INTR_4         PRU_HOST_6
+#define PRU_HOST_INTR_5         PRU_HOST_7
+#define PRU_HOST_INTR_6         PRU_HOST_8
+#define PRU_HOST_INTR_7         PRU_HOST_9
+//}
+
+
+// Host-2 also exported to TSC_ADC (page 17)
+#define PRU_TSC_ADC_INTR        PRU_HOST_2
+// Host-8 also exported as DMA interrupt (page 17)
+#define PRU_DMA_INTR_0          PRU_HOST_8
+#define PRU_DMA_INTR_1          PRU_HOST_9
+
+
+
+/** Useful defines for the default configuration of the interrupt controller.
+ * @see PRUSS_INTC_INITDATA
+ */
+//{
+#define PRU_TRIGGER_R31_30      PRU_EVENT_0
+#define PRU_TRIGGER_R31_31      PRU_EVENT_1
+#define PRU_TRIGGER_HOST_INTR_0 PRU_EVENT_2
+#define PRU_TRIGGER_HOST_INTR_1 PRU_EVENT_3
+//}
+
+
+
+/** Default configuration of interrupt controller mappings.
+ * This configuration enables four system events which are mapped over to four
+ * distinct host interrupts.
+ * Two of these are intended for setting the 30th or 31st bits in the r31
+ * register of both PRU0 and PRU1.  The associated events can be triggered by
+ * either PRU as well as from the ARM.
+ * The other two mappings are intended to interrupt the ARM processor.  The
+ * associated events can also be triggered from any of the PRU0/1 and ARM, but
+ * are most useful when used by the PRU0/1 processors to distinctly interrupt
+ * the ARM processor.
+ */
+#define PRUSS_INTC_INITDATA {                   \
+  { /* enabled system events */                 \
+    PRU_TRIGGER_R31_30,                         \
+    PRU_TRIGGER_R31_31,                         \
+    PRU_TRIGGER_HOST_INTR_0,                    \
+    PRU_TRIGGER_HOST_INTR_1,                    \
+    (char)-1  },                                \
+  { /* event to channel mapping */              \
+    {PRU_TRIGGER_R31_30,      CHANNEL0},        \
+    {PRU_TRIGGER_R31_31,      CHANNEL1},        \
+    {PRU_TRIGGER_HOST_INTR_0, CHANNEL2},        \
+    {PRU_TRIGGER_HOST_INTR_1, CHANNEL3},        \
+    {-1,-1}   },                                \
+  { /* channel to host interrupt line mapping */\
+    {CHANNEL0,  PRU_INTERRUPT_R31_30},          \
+    {CHANNEL1,  PRU_INTERRUPT_R31_31},          \
+    {CHANNEL2,  PRU_HOST_INTR_0},               \
+    {CHANNEL3,  PRU_HOST_INTR_1},               \
+    {-1,-1}   },                                \
+  { /* enabled host interrupts */               \
+    PRU_INTERRUPT_R31_30,                       \
+    PRU_INTERRUPT_R31_31,                       \
+    PRU_HOST_INTR_0,                            \
+    PRU_HOST_INTR_1,                            \
+    -1 }                                        \
 } \
 

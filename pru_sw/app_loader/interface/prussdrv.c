@@ -252,6 +252,14 @@ int prussdrv_init(void)
 int prussdrv_open(unsigned int host_interrupt)
 {
     char name[PRUSS_UIO_PRAM_PATH_LEN];
+
+    /* decrement by 2.  First two hosts are not exported to ARM */
+    host_interrupt -= 2;
+    if (host_interrupt >= NUM_PRU_HOSTIRQS) {
+        DEBUG_PRINTF("Cannot open invalid host interrupt.\n");
+        return -1;
+    }
+
     if (!prussdrv.fd[host_interrupt]) {
         sprintf(name, "/dev/uio%d", host_interrupt);
         prussdrv.fd[host_interrupt] = open(name, O_RDWR | O_SYNC);
@@ -415,10 +423,9 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
     pruintc_io[PRU_INTC_ESR2_REG >> 2] = mask2;
     pruintc_io[PRU_INTC_SECR2_REG >> 2] = mask2;
 
-    for (i = 0; i < MAX_HOSTS_SUPPORTED; i++)
-        if (prussintc_init_data->host_enable_bitmask & (1 << i)) {
-            pruintc_io[PRU_INTC_HIEISR_REG >> 2] = i;
-        }
+    for (i = 0; prussintc_init_data->hosts_enabled[i] < NUM_PRU_HOSTS; ++i)
+        pruintc_io[PRU_INTC_HIEISR_REG >> 2] =
+          prussintc_init_data->hosts_enabled[i];
 
     pruintc_io[PRU_INTC_GER_REG >> 2] = 0x1;
 
@@ -457,9 +464,7 @@ inline short prussdrv_lookup_channel_to_host(
                 intc_data->channel_to_host_map[i].channel != -1 &&
                 intc_data->channel_to_host_map[i].host    != -1; ++i) {
         if ( channel == intc_data->channel_to_host_map[i].channel )
-            /** -2 is because first two host interrupts are reserved
-             * for PRU0 and PRU1 */
-            return intc_data->channel_to_host_map[i].host - 2;
+            return intc_data->channel_to_host_map[i].host;
     }
     return -1;
 }
@@ -496,12 +501,15 @@ inline int prussdrv_pru_send_event(unsigned int eventnum)
 inline unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt)
 {
     unsigned int event_count;
-    read(prussdrv.fd[host_interrupt], &event_count, sizeof(int));
+    /*-2 is because the first two host interrupt lines are meant for the PRUs*/
+    read(prussdrv.fd[host_interrupt-2], &event_count, sizeof(int));
     return event_count;
 }
 
 inline int prussdrv_pru_event_fd(unsigned int host_interrupt)
 {
+    /* decrement by 2.  First two hosts are not exported to ARM */
+    host_interrupt -= 2;
     if (host_interrupt < NUM_PRU_HOSTIRQS)
         return prussdrv.fd[host_interrupt];
     else
@@ -531,9 +539,8 @@ inline int prussdrv_pru_reset_interrupt(unsigned int host_interrupt)
     // Re-enable the host interrupt.  Note that we must generally do this
     // _after_ the system event has been cleared so as to not re-tigger the
     // interrupt line.  See Section 6.4.9 of Reference manual about HIEISR
-    // register.  The +2 is because the first two host interrupts are reserved
-    // for PRU0 and PRU1.
-    pruintc_io[PRU_INTC_HIEISR_REG >> 2] = host_interrupt+2;
+    // register.
+    pruintc_io[PRU_INTC_HIEISR_REG >> 2] = host_interrupt;
     return 0;
 }
 

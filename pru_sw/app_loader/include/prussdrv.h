@@ -105,7 +105,7 @@ extern "C" {
         //{-1, -1} indicates end of list
         tchannel_to_host_map channel_to_host_map[NUM_PRU_CHANNELS];
         //10-bit mask - Enable Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRUEVT_OUT0..7}
-        unsigned int host_enable_bitmask;
+        unsigned int hosts_enabled[NUM_PRU_HOSTS];
     } tpruss_intc_initdata;
 
     int prussdrv_init(void);
@@ -192,7 +192,8 @@ extern "C" {
      * @return the number of times the event has happened. */
     unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt);
 
-    /** Wait for the specified host interrupt.
+    /** Wait for the host interrupt to which the specified system event is
+     * mapped.
      * @return the number of times the event has happened. */
     unsigned int prussdrv_pru_wait_event(unsigned int sysevent);
 
@@ -212,6 +213,11 @@ extern "C" {
      *
      * Generally, this should be done _after_ the system event that caused the
      * interrupt has been cleared (i.e. via prussdrv_pru_clear_event).
+     *
+     * If the interupt is still set, perhaps because of another event that has
+     * not yet been cleared, this function will immediately re-trigger the
+     * interrupt line.  See Section 6.4.9 of Reference manual about HIEISR
+     * register.
      *
      * @see pruss_pru_clear_event
      * @see pruss_pru_reset_event
