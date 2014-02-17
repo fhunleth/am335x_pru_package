@@ -70,7 +70,7 @@
 #include <string.h>
 
 // Driver header file
-#include "prussdrv.h"
+#include <prussdrv.h>
 #include <pruss_intc_mapping.h>
 
 /******************************************************************************
@@ -137,9 +137,7 @@ int main (void)
     prussdrv_init ();
 
     /* Open PRU Interrupt */
-    ret = prussdrv_open(
-      prussdrv_lookup_event_to_host(&pruss_intc_initdata, PRU0_ARM_INTERRUPT)
-    );
+    ret = prussdrv_open( PRU_HOST_INTR_0 );
     if (ret)
     {
         printf("prussdrv_open open failed\n");
@@ -159,9 +157,9 @@ int main (void)
 
     /* Wait until PRU0 has finished execution */
     printf("\tINFO: Waiting for HALT command.\r\n");
-    prussdrv_pru_wait_event (PRU0_ARM_INTERRUPT);
+    prussdrv_pru_wait_interrupt (PRU_HOST_INTR_0);
     printf("\tINFO: PRU completed transfer.\r\n");
-    prussdrv_pru_reset_event (PRU0_ARM_INTERRUPT);
+    prussdrv_pru_reset_event (PRU_TRIGGER_HOST_INTR_0);
 
     /* Check if example passed */
     if ( LOCAL_examplePassed(PRU_NUM) )
