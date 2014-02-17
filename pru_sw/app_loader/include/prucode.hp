@@ -1,0 +1,215 @@
+
+#ifndef PRUCODE_HP
+#define PRUCODE_HP
+
+
+// ***************************************
+// *      Global Macro definitions       *
+// ***************************************
+
+#define AM33XX
+
+#include <pruss_intc_mapping.h>
+
+#ifdef AM33XX
+
+#define CONST_PRUSSINTC         C0 // local address
+#define CONST_DMTIMER2          C1
+#define CONST_I2C1              C2
+#define CONST_ECAP              C3 // local address
+#define CONST_PRUCFG            C4 // local address
+#define CONST_MMCHS0            C5
+#define CONST_MCSPI0            C6
+#define CONST_UART0             C7 // local address
+#define CONST_MCASP0            C8
+#define CONST_GEMAC             C9
+#define CONST_UART1             C11
+#define CONST_UART2             C12
+#define CONST_MDIO              C21 // local address
+#define CONST_PRUDRAM           C24 // local address
+#define CONST_PRUDRAMOTHER      C25 // local address
+#define CONST_IEP               C26 // local address
+#define CONST_MII_RT            C27 // local address
+#define CONST_PRUSHAREDRAM      C28 // local address
+#define CONST_TPCC              C29
+#define CONST_L3RAM             C30
+#define CONST_DDR               C31
+
+// Address for the CYCLE count register
+#define CONTROL          0x22000
+
+// Address for the CYCLE count register
+#define CYCLE          0x2200C
+
+
+// Address for the Constant table Block Index Register 0
+// for configuring
+//   c24 : bits[7:0]
+//   c25 : bits[23:16]
+#define CTBIR_0         0x22020
+
+// Address for the Constant table Block Index Register 1
+// for configuring
+//   c26 : bits[7:0]
+//   c27 : bits[23:16]
+#define CTBIR_1         0x22024
+
+// Address for the Constant table Programmable Pointer Register 0
+// for configuring
+//   c28 : bits[15:0]
+//   c29 : bits[31:16]
+#define CTPPR_0         0x22028
+
+// Address for the Constant table Programmable Pointer Register 1
+// for configuring
+//   c30 : bits[15:0]
+//   c31 : bits[31:16]
+#define CTPPR_1         0x2202C
+
+
+#define GER_OFFSET        0x10
+#define HIEISR_OFFSET     0x34
+#define SICR_OFFSET       0x24
+#define EISR_OFFSET       0x28
+
+#define INTC_CHNMAP_REGS_OFFSET       0x0400
+#define INTC_HOSTMAP_REGS_OFFSET      0x0800
+#define INTC_HOSTINTPRIO_REGS_OFFSET  0x0900
+#define INTC_HOSTNEST_REGS_OFFSET     0x1100
+
+
+
+
+#else // not AM33XX
+
+#define CONST_PRUSSINTC C0
+#define CONST_PRUDRAM   C3
+#define CONST_HPI       C15
+#define CONST_DSPL2     C28
+#define CONST_L3RAM     C30
+#define CONST_DDR       C31
+
+// Address for the Constant table Programmable Pointer Register 0(CTPPR_0)
+#define CTPPR_0         0x7028
+// Address for the Constant table Programmable Pointer Register 1(CTPPR_1)
+#define CTPPR_1         0x702C
+
+#endif // end not AM33XX
+
+
+// Enable OCP master port
+.macro CONFIG_OCP
+.mparam reg=r0
+#ifdef AM33XX
+  LBCO      reg, CONST_PRUCFG, 4, 4
+  CLR       reg, reg, 4 // Clear SYSCFG[STANDBY_INIT] to enable OCP master port
+  SBCO      reg, CONST_PRUCFG, 4, 4
+#endif
+.endm
+
+
+// Conifgure the programmable pointer register
+.macro CONFIG_PTR_REG
+.mparam reg0, reg1, PTR, TARGET
+  MOV       reg0, TARGET
+  MOV       reg1, PTR
+  ST32      reg0, reg1
+.endm
+
+
+// Configure the programmable pointer register for PRU0 by setting
+// c28_pointer[15:0] field to 0x00nn_nn00 and
+// c29_pointer[15:0] field to 0x49mm_mm00.
+// This will make C28 point to 0x00nnnn00 (PRU shared RAM).
+// This will make C29 point to 0x49mmmm00 (TPCC).
+.macro CONFIG_PRUSHARED_RAM
+.mparam shared=0x0000, tpcc=0x0000, reg0=r0, reg1=r1
+  CONFIG_PTR_REG reg0, reg1, CTPPR_0, shared | (tpcc<<16)
+.endm
+
+
+// Configure the programmable pointer register for PRU0 by setting
+// c31_pointer[15:0] field to 0x0010.  This will make C31 point to 0x80001000
+// (DDR memory).
+
+// Configure the programmable pointer register for PRU0 by setting
+// c30_pointer[15:0] field to 0x40nn_nn00 and
+// c31_pointer[15:0] field to 0x80mm_mm00.
+// This will make C30 point to 0x40nnnn00 (L3 memory).
+// This will make C31 point to 0x80mmmm00 (DDR memory).
+.macro CONFIG_DDR_RAM
+.mparam ddr=0x0000, l3=0x0000, reg0=r0, reg1=r1
+  CONFIG_PTR_REG reg0, reg1, CTPPR_1, l3 | (ddr<<16)
+.endm
+
+
+// Configure the block index register for PRU0 by setting c24_blk_index[7:0] and
+// c25_blk_index[7:0] field to 'n=self' and 'm=other', respectively.  This will
+// make C24 point to 0x00000n00 (self DRAM) and C25 point to 0x00002m00 (other
+// DRAM).
+.macro CONFIG_PRU_RAM
+.mparam self=0x0, other=0x0, reg0=r0, reg1=r1
+  CONFIG_PTR_REG reg0, reg1, CTBIR_0, self | (other<<16)
+.endm
+
+
+// Configure the block index register for PRU0 by setting c26_blk_index[7:0] and
+// c27_blk_index[7:0] field to 'n=iep' and 'm=mii_rt', respectively.  This will
+// make C26 point to 0x00000n00 (IEP) and C27 point to 0x00002m00 (MII_RT).
+.macro CONFIG_IEP_MII_RT
+.mparam iep=0x0, mii_rt=0x0, reg0=r0, reg1=r1
+  CONFIG_PTR_REG reg0, reg1, CTBIR_1, iep | (mii_rt<<16)
+.endm
+
+
+.macro  LD32
+.mparam dst,src
+    LBBO    dst,src,#0x00,4
+.endm
+
+.macro  LD16
+.mparam dst,src
+    LBBO    dst,src,#0x00,2
+.endm
+
+.macro  LD8
+.mparam dst,src
+    LBBO    dst,src,#0x00,1
+.endm
+
+.macro ST32
+.mparam src,dst
+    SBBO    src,dst,#0x00,4
+.endm
+
+.macro ST16
+.mparam src,dst
+    SBBO    src,dst,#0x00,2
+.endm
+
+.macro ST8
+.mparam src,dst
+    SBBO    src,dst,#0x00,1
+.endm
+
+
+// trigger system event
+.macro TRIGGER_EVENT
+.mparam event
+#ifdef AM33XX
+  MOV r31.b0, event + 16
+#else
+  MOV r31.b0, event
+#endif
+.endm
+
+
+// clear system event
+.macro CLEAR_EVENT
+.mparam event, rtmp=r0
+  LDI   rtmp.w2,  0x0000
+  LDI   rtmp.w0,  event
+  SBCO  rtmp, CONST_PRUSSINTC, SICR_OFFSET, 4
+.endm
+
+#endif //PRUCODE_HP
