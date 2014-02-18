@@ -6,7 +6,7 @@ from subprocess import Popen
 import clib
 from constants_simple import PRU_EVTOUT_0, PRU0_ARM_INTERRUPT
 
-class InterruptHandler(mp.Process):
+class Handler(mp.Process):
   """
   Base class for an interrupt handler where the __call__ function of the handler
   is called after each event.  Event handlers are executed in their own process.
@@ -38,7 +38,7 @@ class InterruptHandler(mp.Process):
     raise NotImplementedError('Interrupt handlers should define the __call__ function')
 
 
-class Example(InterruptHandler):
+class Example(Handler):
   def __init__(self):
     super(Example,self).__init__()
     self.calls = 0

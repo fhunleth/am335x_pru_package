@@ -9,8 +9,6 @@ from ctypes import \
 from constants_simple import *
 
 
-prussdrv_function_handler = ctypes.CFUNCTYPE(c_void_p, c_void_p)
-
 class tsysevt_to_channel_map(ctypes.Structure):
   _fields_ = [ ('sysevt', c_short), ('channel', c_short) ]
 
@@ -28,6 +26,7 @@ class tpruss_intc_initdata(ctypes.Structure):
     #Channel to Host map.Channels -Range: 0..9  HOSTs - Range:0..9
     #{-1, -1} indicates end of list
     ('channel_to_host_map', tchannel_to_host_map * NUM_PRU_CHANNELS),
-    #10-bit mask - Enable Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRUEVT_OUT0..7)
-    ('host_enable_bitmask', c_uint),
+    #Enabled Host interrupt lines
+    #Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRU_HOST_INTR_0..7}
+    ('hosts_enabled', c_uint * NUM_PRU_HOSTS),
   ]
