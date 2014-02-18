@@ -66,18 +66,18 @@
 // *       Local Macro definitions       *
 // ***************************************
 
-#define SYS_EVT           PRU_TRIGGER_R31_31
-#define SYS_EVT_PRU0      PRU_TRIGGER_R31_30
-#define SYS_EVT_PRU0_BIT  30
+#define EVT_FROM_PRU0     PRU_TRIGGER0_R31_30 // event from pru0
+#define EVT_FROM_PRU0_BIT 30                  // r31:bit from pru0
+#define EVT_TO_PRU0       PRU_TRIGGER0_R31_31 // event to pru0
 
 PRU1_TO_PRU0_INTERRUPT:
 POLL:
     // Poll for receipt of interrupt on host 0
-    WBS       r31, SYS_EVT_PRU0_BIT
+    WBS       r31, EVT_FROM_PRU0_BIT
 
 FUNC:
     // Clear the status of the interrupt
-    CLEAR_EVENT SYS_EVT_PRU0
+    CLEAR_EVENT EVT_FROM_PRU0
 
     // Config CONST_DDR pointer to 0x80000000
     CONFIG_DDR_RAM
@@ -85,8 +85,8 @@ FUNC:
     MOV       r0, 0x0A
     SBCO      r0, CONST_DDR, 0x00, 4
 
-    //Generate SYS_EVT
-    TRIGGER_EVENT SYS_EVT
+    //Generate EVT_TO_PRU0
+    TRIGGER_EVENT EVT_TO_PRU0
 
 DONE:
     // Send notification to Host for program completion

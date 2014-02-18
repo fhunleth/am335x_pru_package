@@ -67,9 +67,11 @@
 // *       Local Macro definitions       *
 // ***************************************
 
-#define SYS_EVT           PRU_TRIGGER_R31_30
-#define SYS_EVT_PRU1      PRU_TRIGGER_R31_31
-#define SYS_EVT_PRU1_BIT  31
+#define EVT_FROM_ARM       PRU_TRIGGER1_R31_31 // event from arm
+#define EVT_FROM_ARM_BIT   31                  // r31:bit from arm
+#define EVT_TO_PRU1        PRU_TRIGGER0_R31_30 // event to pru1
+#define EVT_FROM_PRU1      PRU_TRIGGER0_R31_31 // event from pru1
+#define EVT_FROM_PRU1_BIT  31                  // r31:bit from pru1
 
 
 PRU0_TO_PRU1_INTERRUPT:
@@ -77,12 +79,17 @@ PRU0_TO_PRU1_INTERRUPT:
     // Enable OCP master port
     CONFIG_OCP
 
-    //Generate SYS_EVT
-    TRIGGER_EVENT SYS_EVT
+    // Poll for receipt of interrupt on host 1 (from ARM)
+BEGIN:
+    WBS       r31, EVT_FROM_ARM_BIT
+    CLEAR_EVENT EVT_FROM_ARM
 
-    // Poll for receipt of interrupt on host 1
+    //Generate EVT_TO_PRU1
+    TRIGGER_EVENT EVT_TO_PRU1
+
+    // Poll for receipt of interrupt on host 1 (from PRU1)
 POLL:
-    WBS       r31, SYS_EVT_PRU1_BIT
+    WBS       r31, EVT_FROM_PRU1_BIT
 
 DONE:
     // Config CONST_DDR pointer to 0x80000000
@@ -92,7 +99,7 @@ DONE:
     SBCO      r0, CONST_DDR, 0x04, 4
 
     // Clear the status of the interrupt
-    CLEAR_EVENT SYS_EVT_PRU1
+    CLEAR_EVENT EVT_FROM_PRU1
 
     // Send notification to Host for program completion
     TRIGGER_EVENT PRU_TRIGGER_HOST_INTR_0

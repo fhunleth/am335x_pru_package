@@ -167,6 +167,9 @@ int main(void)
     printf("\t\tINFO: Executing example on PRU1.\r\n");
     prussdrv_exec_program (PRU_NUM1, "./PRU_PRU1toPRU0_Interrupt.bin");
 
+    /* trigger r31:31.  pru0 subsequently begins everything else. */
+    printf("\tINFO: Giving GO signal to PRU0.\r\n");
+    prussdrv_pru_send_event (PRU_TRIGGER1_R31_31);
 
     /* Wait until PRU0 has finished execution */
     printf("\tINFO: Waiting for HALT command.\r\n");
