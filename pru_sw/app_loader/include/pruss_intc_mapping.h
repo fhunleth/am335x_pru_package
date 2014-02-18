@@ -154,10 +154,12 @@
  * @see PRUSS_INTC_INITDATA
  */
 //{
-#define PRU_TRIGGER_R31_30      PRU_EVENT_0
-#define PRU_TRIGGER_R31_31      PRU_EVENT_1
-#define PRU_TRIGGER_HOST_INTR_0 PRU_EVENT_2
-#define PRU_TRIGGER_HOST_INTR_1 PRU_EVENT_3
+#define PRU_TRIGGER0_R31_30     PRU_EVENT_0
+#define PRU_TRIGGER1_R31_30     PRU_EVENT_1
+#define PRU_TRIGGER0_R31_31     PRU_EVENT_2
+#define PRU_TRIGGER1_R31_31     PRU_EVENT_3
+#define PRU_TRIGGER_HOST_INTR_0 PRU_EVENT_4
+#define PRU_TRIGGER_HOST_INTR_1 PRU_EVENT_5
 //}
 
 
@@ -175,14 +177,18 @@
  */
 #define PRUSS_INTC_INITDATA {                   \
   { /* enabled system events */                 \
-    PRU_TRIGGER_R31_30,                         \
-    PRU_TRIGGER_R31_31,                         \
+    PRU_TRIGGER0_R31_30,                        \
+    PRU_TRIGGER1_R31_30,                        \
+    PRU_TRIGGER0_R31_31,                        \
+    PRU_TRIGGER1_R31_31,                        \
     PRU_TRIGGER_HOST_INTR_0,                    \
     PRU_TRIGGER_HOST_INTR_1,                    \
     (char)-1  },                                \
   { /* event to channel mapping */              \
-    {PRU_TRIGGER_R31_30,      CHANNEL0},        \
-    {PRU_TRIGGER_R31_31,      CHANNEL1},        \
+    {PRU_TRIGGER0_R31_30,     CHANNEL0},        \
+    {PRU_TRIGGER1_R31_30,     CHANNEL0},        \
+    {PRU_TRIGGER0_R31_31,     CHANNEL1},        \
+    {PRU_TRIGGER1_R31_31,     CHANNEL1},        \
     {PRU_TRIGGER_HOST_INTR_0, CHANNEL2},        \
     {PRU_TRIGGER_HOST_INTR_1, CHANNEL3},        \
     {-1,-1}   },                                \
