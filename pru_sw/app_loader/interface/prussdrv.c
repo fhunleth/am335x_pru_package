@@ -327,7 +327,7 @@ int prussdrv_pru_disable(unsigned int prunum)
 
 }
 
-int prussdrv_pru_write_memory(unsigned int pru_ram_id,
+int prussdrv_pru_write_memory(pru_memory_t pru_ram_id,
                               unsigned int wordoffset,
                               const unsigned int *memarea,
                               unsigned int bytelength)
@@ -587,7 +587,7 @@ unsigned int prussdrv_extmem_size(void)
     return prussdrv.extram_map_size;
 }
 
-int prussdrv_map_prumem(unsigned int pru_ram_id, void **address)
+int prussdrv_map_prumem(pru_memory_t pru_ram_id, void **address)
 {
     switch (pru_ram_id) {
     case PRUSS0_PRU0_DATARAM:
@@ -608,7 +608,7 @@ int prussdrv_map_prumem(unsigned int pru_ram_id, void **address)
     return 0;
 }
 
-int prussdrv_map_peripheral_io(unsigned int per_id, void **address)
+int prussdrv_map_peripheral_io(pru_peripheral_t per_id, void **address)
 {
     if (prussdrv.version != PRUSS_V2)
         return -1;
@@ -745,7 +745,7 @@ int prussdrv_exec_program(int prunum, const char *filename)
 
 int prussdrv_exec_code(int prunum, const unsigned int *code, int codelen)
 {
-    unsigned int pru_ram_id;
+    pru_memory_t pru_ram_id;
 
     if (prunum == 0)
         pru_ram_id = PRUSS0_PRU0_IRAM;

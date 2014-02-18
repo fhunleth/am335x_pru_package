@@ -59,32 +59,28 @@ extern "C" {
 #define NUM_PRU_CHANNELS       10
 #define NUM_PRU_SYS_EVTS       64
 
-#define PRUSS0_PRU0_DATARAM     0
-#define PRUSS0_PRU1_DATARAM     1
-#define PRUSS0_PRU0_IRAM        2
-#define PRUSS0_PRU1_IRAM        3
-
 #define PRUSS_V1                1 // AM18XX
 #define PRUSS_V2                2 // AM33XX
 
-//Available in AM33xx series - begin
-#define PRUSS0_SHARED_DATARAM   4
-#define	PRUSS0_CFG              5
-#define	PRUSS0_UART             6
-#define	PRUSS0_IEP              7
-#define	PRUSS0_ECAP             8
-#define	PRUSS0_MII_RT           9
-#define	PRUSS0_MDIO            10
-//Available in AM33xx series - end
+    /** Types of memory on PRU0/1. */
+    typedef enum {
+        PRUSS0_PRU0_DATARAM,
+        PRUSS0_PRU1_DATARAM,
+        PRUSS0_PRU0_IRAM,
+        PRUSS0_PRU1_IRAM,
+        PRUSS0_SHARED_DATARAM     // AM33XX only
+    } pru_memory_t;
 
-#define PRU_EVTOUT_0            0
-#define PRU_EVTOUT_1            1
-#define PRU_EVTOUT_2            2
-#define PRU_EVTOUT_3            3
-#define PRU_EVTOUT_4            4
-#define PRU_EVTOUT_5            5
-#define PRU_EVTOUT_6            6
-#define PRU_EVTOUT_7            7
+    /** Peripheral devices available in AM33xx series. */
+    typedef enum {
+       	PRUSS0_CFG,
+       	PRUSS0_UART,
+       	PRUSS0_IEP,
+       	PRUSS0_ECAP,
+       	PRUSS0_MII_RT,
+       	PRUSS0_MDIO
+    } pru_peripheral_t;
+
 
     typedef struct __sysevt_to_channel_map {
         short sysevt;
@@ -104,7 +100,8 @@ extern "C" {
         //Channel to Host map.Channels -Range: 0..9  HOSTs - Range:0..9
         //{-1, -1} indicates end of list
         tchannel_to_host_map channel_to_host_map[NUM_PRU_CHANNELS];
-        //10-bit mask - Enable Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRUEVT_OUT0..7}
+        //Enabled Host interrupt lines
+        //Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRU_HOST_INTR_0..7}
         unsigned int hosts_enabled[NUM_PRU_HOSTS];
     } tpruss_intc_initdata;
 

@@ -90,8 +90,6 @@
 #define OFFSET_DDR	 0x00001000
 #define OFFSET_SHAREDRAM 2048		//equivalent with 0x00002000
 
-#define PRUSS0_SHARED_DATARAM    4
-
 /******************************************************************************
 * Local Typedef Declarations                                                  *
 ******************************************************************************/
