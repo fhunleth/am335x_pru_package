@@ -3,6 +3,7 @@
 Simple helper class to ensure strict typing on arguments to functions that take
 enumerations.
 """
+from inspect import currentframe
 
 __all__ = ['Enum']
 
@@ -19,8 +20,13 @@ class EnumerationType(type(c_uint)):
           _members_[key] = value
       dict["_members_"] = _members_
     cls = type(c_uint).__new__(metacls, name, bases, dict)
+
+    # use globals of parent.parent frame.
+    f = currentframe()
+    G = f.f_back.f_back.f_globals
+
     for key,value in cls._members_.items():
-        globals()[key] = value
+        G[key] = value
     return cls
 
   def __contains__(self, value):
@@ -33,11 +39,9 @@ class Enumeration(c_uint):
   __metaclass__ = EnumerationType
   _members_ = {}
   def __init__(self, value):
-    for k,v in self._members_.items():
-      if v == value:
-        self.name = k
-        break
-    else:
+    try:
+      self.name = self.reverse[value]
+    except KeyError:
       raise ValueError("No enumeration member with value %r" % value)
     c_uint.__init__(self, value)
 
