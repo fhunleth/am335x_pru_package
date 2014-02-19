@@ -3,7 +3,7 @@
 from ptypes import *
 from constants_simple import *
 
-def getPRUSS_INTC_INITDATA():
+def get_default_INTC_config():
   return tpruss_intc_initdata(
     sysevts_enabled = (
       PRU_TRIGGER_R31_30,

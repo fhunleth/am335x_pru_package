@@ -70,7 +70,7 @@ prototype( 'get_phys_addr',            [POINTER(c_ubyte)],  c_uint )
 prototype( 'get_virt_addr',            [c_uint],  POINTER(c_ubyte) )
 prototype( 'pru_wait_interrupt',       [c_uint],  c_uint    )
 prototype( 'pru_wait_event',           [c_uint],  c_uint    )
-prototype( 'pru_event_fd',             [c_uint],  c_int     )
+prototype( 'pru_interrupt_fd',         [c_uint],  c_int     )
 prototype( 'pru_send_event',           [c_uint]             )
 prototype( 'pru_clear_event',          [c_uint]             )
 prototype( 'pru_reset_interrupt',      [c_uint]             )
@@ -82,3 +82,6 @@ prototype( 'exec_program',             [c_int, c_char_p]    )
 prototype( 'exec_code',                [c_int,              # pru id
                                         POINTER(c_uint32),  # pru code
                                         c_int] )            # length of pru code
+# small redef, because we can easily measure lengths in python
+_exec_code = exec_code
+exec_code = lambda id, code: _exec_code(id, code, len(code))

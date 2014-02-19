@@ -30,3 +30,33 @@ class tpruss_intc_initdata(ctypes.Structure):
     #Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRU_HOST_INTR_0..7}
     ('hosts_enabled', c_uint * NUM_PRU_HOSTS),
   ]
+
+  @property
+  def events(self):
+    for h in self.sysevts_enabled:
+      if h >= NUM_PRU_SYS_EVTS: break
+      yield h
+
+  @events.setter
+  def events(self, new_list):
+    self.sysevts_enabled[:] = new_list
+    self.sysevts_enabled[len(new_list)] = -1
+
+  @property
+  def host_interrupts(self):
+    for h in self.hosts_enabled:
+      if h >= NUM_PRU_HOSTS: break
+      yield h
+
+  @property
+  def exported_host_interrupts(self):
+    """Different view of hosts: only those accessible by ARM code"""
+    for h in self.hosts_enabled:
+      if h in [ PRU_INTERRUPT_R31_30, PRU_INTERRUPT_R31_31 ]: continue
+      if h >= NUM_PRU_HOSTS: break
+      yield h
+
+  @host_interrupts.setter
+  def host_interrupts(self, new_list):
+    self.hosts_enabled[:] = new_list
+    self.hosts_enabled[len(new_list)] = -1
