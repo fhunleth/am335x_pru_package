@@ -1,10 +1,14 @@
-#!/usr/bin/env python
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import sys
-sys.path.insert(0,'../../../app_loader/python')#prepend this to get this version
+from os import path
+sys.path.insert(0, #prepend this to get this version
+  path.join(path.dirname(__file__), '../../../app_loader/python')
+)
 
 import prussdrv
+from prussdrv import PRU_HOST_INTR_0, PRU_TRIGGER_HOST_INTR_0
+from ctypes import byref
 
 pruss_intc_config = prussdrv.get_default_INTC_config()
 

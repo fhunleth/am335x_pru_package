@@ -1,8 +1,10 @@
-#!/usr/bin/env python
 # vim: ts=2:sw=2:tw=80:nowrap
 
 import sys
-sys.path.insert(0,'../../../app_loader/python')#prepend this to get this version
+from os import path
+sys.path.insert(0, #prepend this to get this version
+  path.join(path.dirname(__file__), '../../../app_loader/python')
+)
 
 from ctypes import Structure, POINTER, c_uint16, c_uint32
 from random import randint
@@ -18,6 +20,8 @@ class Pulse(Structure):
     ('r30',   c_uint16),
     ('ignored',c_uint16),
   ]
+  def __repr__(self):
+    return 'dict(count={},r30={})'.format(self.count, self.r30)
 
 class PulseMemory(MemoryModel):
   _pack_ = 1
@@ -28,7 +32,7 @@ class ExecExample(ExecModel):
   MemoryModel = PulseMemory
 
   def __init__(self):
-    ExecModel.__init__(self,program_path='pusles.bin')
+    ExecModel.__init__(self,program_path='pulses.bin')
     self.add_response(PRU_HOST_INTR_0, self.exit_after_pru0)
 
     for i in xrange(100):
@@ -39,5 +43,6 @@ class ExecExample(ExecModel):
 
   def exit_after_pru0(self, host_interrupt, count):
     print 'finished'
+    return False # signify finish
 
 ExecExample().run()

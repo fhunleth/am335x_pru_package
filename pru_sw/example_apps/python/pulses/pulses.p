@@ -38,7 +38,7 @@ START:
       .assign Pulse, r6, *, pulse
 
       LDI position, 0 // initialize position register to zero
-      LOOP:
+      PULSE_LOOP:
         // load the next pulse from memory
         LBCO pulse, CONST_PRUDRAM, position, SIZE(pulse)
         QBEQ DONE, pulse.count, 0
@@ -49,11 +49,11 @@ START:
         // Delay by counting down...
         COUNT:
           SUB pulse.count, pulse.count, 1
-          QBLT COUNT, pulse.count, 1
+          QBLE COUNT, pulse.count, 1
 
         // Increment the pulse position for the next iteration
         ADD position, position, SIZE(pulse)
-        QBA LOOP
+        QBA PULSE_LOOP
 
       DONE:
 

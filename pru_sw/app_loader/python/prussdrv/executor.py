@@ -32,8 +32,10 @@ class MemoryModel(Union):
 
 class ExecModel(object):
   MemoryModel = MemoryModel
-  get_intc_config = get_default_INTC_config
   _responses_ = list()
+
+  def make_intc_config(self):
+    return get_default_INTC_config()
 
   def __init__( self, program_path, pruId = 0, disable_on_exit=False ):
     self.program_path = program_path
@@ -45,7 +47,7 @@ class ExecModel(object):
     self.data   = self.MemoryModel( 8 * 1<<10)
     self.other  = self.MemoryModel( 8 * 1<<10)
 
-    self.intc_data = self.get_intc_config()
+    self.intc_data = self.make_intc_config()
 
     self.__responses = {
       h:list()  for h in self.intc_data.exported_host_interrupts
@@ -90,7 +92,8 @@ class ExecModel(object):
   def respond( self, timeout=None ):
     poll = select.poll()
     fd_to_h = dict()
-    for h in self.__responses:
+    for h, flist in self.__responses.items():
+      if not flist: continue
       fd = clib.pru_interrupt_fd(h)
       fd_to_h[fd] = h
       poll.register( fd, select.POLLIN|select.POLLPRI )
@@ -104,8 +107,20 @@ class ExecModel(object):
       for fd, ev_mask in polled:
         h = fd_to_h[fd]
         count = clib.pru_wait_interrupt(h) # should return immediately
+        remove = list()
         for f in self.__responses[ h ]:
-          f(h, count)
+          if f(h, count) == False:
+            remove.append( f )
+        for f in remove:
+          self.__responses[h].remove( f )
+
+
+        if len(self.__responses[h]) == 0:
+          poll.unregister( fd )
+          fd_to_h.pop(fd)
+
+      if len(fd_to_h) == 0:
+        return
 
   def run(self, timeout=None):
     clib.exec_program(self.pruId, self.program_path)
