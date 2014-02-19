@@ -506,7 +506,7 @@ inline unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt)
     return event_count;
 }
 
-inline int prussdrv_pru_event_fd(unsigned int host_interrupt)
+inline int prussdrv_pru_interrupt_fd(unsigned int host_interrupt)
 {
     /* decrement by 2.  First two hosts are not exported to ARM */
     host_interrupt -= 2;

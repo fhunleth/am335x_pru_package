@@ -194,7 +194,7 @@ extern "C" {
      * @return the number of times the event has happened. */
     unsigned int prussdrv_pru_wait_event(unsigned int sysevent);
 
-    int prussdrv_pru_event_fd(unsigned int host_interrupt);
+    int prussdrv_pru_interrupt_fd(unsigned int host_interrupt);
 
     int prussdrv_pru_send_event(unsigned int eventnum);
 
