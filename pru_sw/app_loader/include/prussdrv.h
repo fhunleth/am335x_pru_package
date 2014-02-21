@@ -198,6 +198,14 @@ extern "C" {
 
     int prussdrv_pru_send_event(unsigned int eventnum);
 
+    /** Test whether the Enabled Status is pending for a particular system
+     * event.
+     * According the page 154 of the PRU-ICSS reference guide:
+     *   The pending status reflects whether the system interrupt occurred since
+     *   the last time the status register bit was cleared.
+     */
+    int prussdrv_pru_event_status(unsigned int sysevent);
+
     /** Clear the specified event.
      * Does not reset the host interrupt.
      * @see pruss_pru_reset_event

@@ -498,6 +498,15 @@ inline int prussdrv_pru_send_event(unsigned int eventnum)
     return 0;
 }
 
+inline int prussdrv_pru_event_status(unsigned int sysevent)
+{
+    unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
+    if (sysevent < 32)
+        return pruintc_io[PRU_INTC_SRSR1_REG >> 2] & (1 << sysevent);
+    else
+        return pruintc_io[PRU_INTC_SRSR2_REG >> 2] & (1 << (sysevent - 32));
+}
+
 inline unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt)
 {
     unsigned int event_count;
