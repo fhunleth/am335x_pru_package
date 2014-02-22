@@ -59,53 +59,53 @@ extern "C" {
 #define NUM_PRU_CHANNELS       10
 #define NUM_PRU_SYS_EVTS       64
 
-#define PRUSS0_PRU0_DATARAM     0
-#define PRUSS0_PRU1_DATARAM     1
-#define PRUSS0_PRU0_IRAM        2
-#define PRUSS0_PRU1_IRAM        3
-
 #define PRUSS_V1                1 // AM18XX
 #define PRUSS_V2                2 // AM33XX
 
-//Available in AM33xx series - begin
-#define PRUSS0_SHARED_DATARAM   4
-#define	PRUSS0_CFG              5
-#define	PRUSS0_UART             6
-#define	PRUSS0_IEP              7
-#define	PRUSS0_ECAP             8
-#define	PRUSS0_MII_RT           9
-#define	PRUSS0_MDIO            10
-//Available in AM33xx series - end
+    /** Types of memory on PRU0/1. */
+    typedef enum {
+        PRUSS0_PRU0_DATARAM,
+        PRUSS0_PRU1_DATARAM,
+        PRUSS0_PRU0_IRAM,
+        PRUSS0_PRU1_IRAM,
+        PRUSS0_SHARED_DATARAM     // AM33XX only
+    } pru_memory_t;
 
-#define PRU_EVTOUT_0            0
-#define PRU_EVTOUT_1            1
-#define PRU_EVTOUT_2            2
-#define PRU_EVTOUT_3            3
-#define PRU_EVTOUT_4            4
-#define PRU_EVTOUT_5            5
-#define PRU_EVTOUT_6            6
-#define PRU_EVTOUT_7            7
+    /** Peripheral devices available in AM33xx series. */
+    typedef enum {
+       	PRUSS0_CFG,
+       	PRUSS0_UART,
+       	PRUSS0_IEP,
+       	PRUSS0_ECAP,
+       	PRUSS0_MII_RT,
+       	PRUSS0_MDIO
+    } pru_peripheral_t;
+
 
     typedef struct __sysevt_to_channel_map {
-        short sysevt;
-        short channel;
+        unsigned short sysevt;
+        unsigned short channel;
     } tsysevt_to_channel_map;
     typedef struct __channel_to_host_map {
-        short channel;
-        short host;
+        unsigned short channel;
+        unsigned short host;
     } tchannel_to_host_map;
     typedef struct __pruss_intc_initdata {
         //Enabled SYSEVTs - Range:0..63
-        //{-1} indicates end of list
-        char sysevts_enabled[NUM_PRU_SYS_EVTS];
+        //-1 or >=NUM_PRU_SYS_EVTS indicates end of list
+        unsigned short sysevts_enabled[NUM_PRU_SYS_EVTS];
         //SysEvt to Channel map. SYSEVTs - Range:0..63 Channels -Range: 0..9
-        //{-1, -1} indicates end of list
+        //{-1, -1} or {>=NUM_PRU_SYS_EVTS, >=NUM_PRU_CHANNELS}
+        // indicates end of list
         tsysevt_to_channel_map sysevt_to_channel_map[NUM_PRU_SYS_EVTS];
         //Channel to Host map.Channels -Range: 0..9  HOSTs - Range:0..9
-        //{-1, -1} indicates end of list
+        //{-1, -1}  or {>=NUM_PRU_CHANNELS, >=NUM_PRU_HOSTS}
+        // indicates end of list
         tchannel_to_host_map channel_to_host_map[NUM_PRU_CHANNELS];
-        //10-bit mask - Enable Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRUEVT_OUT0..7}
-        unsigned int host_enable_bitmask;
+        //Enabled Host interrupt lines
+        //Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRU_HOST_INTR_0..7}
+        //-1 or >=NUM_PRU_HOSTS indicates end of list
+        unsigned short hosts_enabled[NUM_PRU_HOSTS];
     } tpruss_intc_initdata;
 
     int prussdrv_init(void);
@@ -124,7 +124,7 @@ extern "C" {
 
     int prussdrv_pru_enable(unsigned int prunum);
 
-    int prussdrv_pru_write_memory(unsigned int pru_ram_id,
+    int prussdrv_pru_write_memory(pru_memory_t pru_ram_id,
                                   unsigned int wordoffset,
                                   const unsigned int *memarea,
                                   unsigned int bytelength);
@@ -140,6 +140,14 @@ extern "C" {
      */
     short prussdrv_get_event_to_channel_map( unsigned int eventnum );
 
+    /** Lookup, from the specified interrupt controller configuration, which
+     * channel a given event should be mapped to.
+     */
+    short prussdrv_lookup_event_to_channel(
+      const tpruss_intc_initdata *intc_data,
+      unsigned int eventnum
+    );
+
     /** Find and return the host interrupt line a specified channel is mapped
      * to.  Note that this only searches for the first host interrupt line
      * mapped and will not detect error cases where a channel is mapped
@@ -149,6 +157,14 @@ extern "C" {
      */
     short prussdrv_get_channel_to_host_map( unsigned int channel );
 
+    /** Lookup, from the specified interrupt controller configuration, which
+     * host interrupt line a given channel should be mapped to.
+     */
+    short prussdrv_lookup_channel_to_host(
+      const tpruss_intc_initdata *intc_data,
+      unsigned int channel
+    );
+
     /** Find and return the host interrupt line a specified event is mapped
      * to.  This first finds the intermediate channel and then the host.
      * @return host-interrupt-line to which a system event is mapped.
@@ -156,15 +172,23 @@ extern "C" {
      */
     short prussdrv_get_event_to_host_map( unsigned int eventnum );
 
+    /** Lookup, from the specified interrupt controller configuration, which
+     * host interrupt line a given event should be mapped to.
+     */
+    short prussdrv_lookup_event_to_host(
+      const tpruss_intc_initdata *intc_data,
+      unsigned int eventnum
+    );
+
     int prussdrv_map_l3mem(void **address);
 
     int prussdrv_map_extmem(void **address);
 
     unsigned int prussdrv_extmem_size(void);
 
-    int prussdrv_map_prumem(unsigned int pru_ram_id, void **address);
+    int prussdrv_map_prumem(pru_memory_t pru_ram_id, void **address);
 
-    int prussdrv_map_peripheral_io(unsigned int per_id, void **address);
+    int prussdrv_map_peripheral_io(pru_peripheral_t per_id, void **address);
 
     unsigned int prussdrv_get_phys_addr(const void *address);
 
@@ -172,18 +196,58 @@ extern "C" {
 
     /** Wait for the specified host interrupt.
      * @return the number of times the event has happened. */
-    unsigned int prussdrv_pru_wait_event(unsigned int host_interrupt);
+    unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt);
 
-    int prussdrv_pru_event_fd(unsigned int host_interrupt);
+    /** Wait for the host interrupt to which the specified system event is
+     * mapped.
+     * @return the number of times the event has happened. */
+    unsigned int prussdrv_pru_wait_event(unsigned int sysevent);
+
+    int prussdrv_pru_interrupt_fd(unsigned int host_interrupt);
 
     int prussdrv_pru_send_event(unsigned int eventnum);
 
-    /** Clear the specified event and re-enable the host interrupt. */
-    int prussdrv_pru_clear_event(unsigned int host_interrupt,
-                                 unsigned int sysevent);
+    /** Test whether the Enabled Status is pending for a particular system
+     * event.
+     * According the page 154 of the PRU-ICSS reference guide:
+     *   The pending status reflects whether the system interrupt occurred since
+     *   the last time the status register bit was cleared.
+     */
+    int prussdrv_pru_event_status(unsigned int sysevent);
 
-    int prussdrv_pru_send_wait_clear_event(unsigned int send_eventnum,
-                                           unsigned int host_interrupt,
+    /** Clear the specified event.
+     * Does not reset the host interrupt.
+     * @see pruss_pru_reset_event
+     * @see pruss_pru_reset_interrupt
+     */
+    int prussdrv_pru_clear_event(unsigned int sysevent);
+
+    /** Reset the host interrupt.
+     * Does not clear the system event that caused the interrupt.
+     *
+     * Generally, this should be done _after_ the system event that caused the
+     * interrupt has been cleared (i.e. via prussdrv_pru_clear_event).
+     *
+     * If the interupt is still set, perhaps because of another event that has
+     * not yet been cleared, this function will immediately re-trigger the
+     * interrupt line.  See Section 6.4.9 of Reference manual about HIEISR
+     * register.
+     *
+     * @see pruss_pru_clear_event
+     * @see pruss_pru_reset_event
+     */
+    int prussdrv_pru_reset_interrupt(unsigned int host_interrupt);
+
+    /** Clear the specified event and reset the associated interrupt.
+     * Simplified event/interrupt clear/reset routine that does:
+     *    1. pruss_pru_clear_event(sysevent)
+     *    2. pruss_pru_reset_interrupt( get_interrupt(sysevent) )
+     * @see pruss_pru_clear_event
+     * @see pruss_pru_reset_interrupt
+     */
+    int prussdrv_pru_reset_event(unsigned int sysevent);
+
+    int prussdrv_pru_send_wait_reset_event(unsigned int send_eventnum,
                                            unsigned int ack_eventnum);
 
     int prussdrv_exit(void);

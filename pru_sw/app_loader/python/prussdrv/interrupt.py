@@ -4,16 +4,17 @@ import multiprocessing as mp
 from subprocess import Popen
 
 import clib
-from constants_simple import PRU_EVTOUT_0, PRU0_ARM_INTERRUPT
+from constants_simple import PRU_TRIGGER_HOST_INTR_0
 
-class InterruptHandler(mp.Process):
+class Handler(mp.Process):
   """
   Base class for an interrupt handler where the __call__ function of the handler
   is called after each event.  Event handlers are executed in their own process.
   if you want to communicate information back to the original process, you will
   have to use interprocess communications (see multiprocessing package).
   """
-  def __init__(self, system_event=PRU0_ARM_INTERRUPT, priority=1, *args, **kwargs):
+  def __init__(self, system_event=PRU_TRIGGER_HOST_INTR_0,
+               priority=1, *args, **kwargs):
     mp.Process.__init__(self, *args, **kwargs)
     self.system_event = system_event
     self.host_interrupt = clib.get_event_to_host_map( system_event )
@@ -30,15 +31,15 @@ class InterruptHandler(mp.Process):
 
   def run(self):
     while True:
-      self.count = clib.pru_wait_event( self.host_interrupt )
+      self.count = clib.pru_wait_interrupt( self.host_interrupt )
       self()
-      clib.pru_clear_event( self.host_interrupt, self.system_event )
+      clib.pru_reset_event( self.system_event )
 
   def __call__(self):
     raise NotImplementedError('Interrupt handlers should define the __call__ function')
 
 
-class Example(InterruptHandler):
+class Example(Handler):
   def __init__(self):
     super(Example,self).__init__()
     self.calls = 0

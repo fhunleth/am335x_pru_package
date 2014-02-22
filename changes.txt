@@ -1,0 +1,67 @@
+This summary describes the changes to the user interface that have been made
+since the last release of this software (in July 2013).
+Documentation needs to be modified to reflect these changes:
+
+Added:
+  prussdrv_extmem_size()
+  prussdrv_version()
+  prussdrv_strversion(int version)
+  prussdrv_get_event_to_channel_map(unsigned int event)
+  prussdrv_lookup_event_to_channel_map(const intc_data*, unsigned int event)
+  prussdrv_get_channel_to_host_map(unsigned int channel)
+  prussdrv_lookup_channel_to_host_map(const intc_data*, unsigned int channel)
+  prussdrv_get_event_to_host_map(unsigned int event)
+  prussdrv_lookup_event_to_host_map(const intc_data*, unsigned int event)
+
+  prussdrv_pru_wait_event(unsigned int event) (not the same as the old version)
+  prussdrv_pru_event_status(unsigned int event)
+  prussdrv_pru_reset_event(unsigned int event)
+  prussdrv_pru_reset_interrupt(unsigned int host_interrupt)
+  prussdrv_pru_interrupt_fd(unsigned int host_interrupt)
+  prussdrv_exec_code(int prunum, const unsigned int *code, int codelen)
+
+  prucode.hp library for very basic set of useful macros for PASM code
+  python ctypes wrapper around prussdrv library
+  "install" added to Makefile(s)
+  old_examples--not sure we should take on documenting this yet.
+
+Changed:
+  prussdrv_pru_wait_event(unsigned int host_interrupt) (original version)
+    split to
+    prussdrv_pru_wait_interrupt(unsigned int host_interrupt)
+      --only waits for interrupt
+        now returns the number of times the interrupt has occurred
+    prussdrv_pru_reset_interrupt(unsigned int host_interrupt)
+      --only resets the interrupt.  Needs to be done _after_ service _and after_
+        triggering event is cleared
+  prussdrv_pru_send_wait_clear_event(send_event,host_interrupt,ack_event)
+    changed to
+    prussdrv_pru_send_wait_reset_event(send_event,ack_event)
+
+  prusdrv_exec_program(int, char*)
+    should be changed to (int, const char*)
+    returns -1 upon failure
+
+  Several parameters that are used as readonly were marked as const
+
+  pasm:
+    --#include <> has changed meaning now...Now follows convention to search for
+      file within set of include dirs
+    --add -I<directory> command line option to add files to the set of
+      directories searched for resolving #include <...> directives
+    --add support for c-style comments (/*...*/)
+    --add support for line continuation using the '\' character
+
+  examples:
+    --updated to reflect redefined constants
+    --updated to use prucode.hp library macros
+
+  events/channels/hosts:
+    --see below--
+
+Removed:
+  prussdrv_start_irqthread
+  pthreads dependency
+
+Fixed:
+  build on FreeBSD

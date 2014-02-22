@@ -59,53 +59,37 @@
 .origin 0
 .entrypoint PRU1_TO_PRU0_INTERRUPT
 
-#include "PRU_PRUtoPRU_Interrupt.hp"
+#include <prucode.hp>
 
 
 // ***************************************
 // *       Local Macro definitions       *
 // ***************************************
 
-#define SYS_EVT         PRU1_PRU0_INTERRUPT
-#define SYS_EVT_PRU0    PRU0_PRU1_INTERRUPT
+#define EVT_FROM_PRU0     PRU_TRIGGER0_R31_30 // event from pru0
+#define EVT_FROM_PRU0_BIT 30                  // r31:bit from pru0
+#define EVT_TO_PRU0       PRU_TRIGGER0_R31_31 // event to pru0
 
 PRU1_TO_PRU0_INTERRUPT:
 POLL:
     // Poll for receipt of interrupt on host 0
-    WBS       eventStatus, 31
+    WBS       r31, EVT_FROM_PRU0_BIT
 
 FUNC:
     // Clear the status of the interrupt
-    LDI	        regVal.w2,	0x0000
-    LDI	        regVal.w0,	SYS_EVT_PRU0
-    SBCO	regVal,	CONST_PRUSSINTC,	SICR_OFFSET,        4
+    CLEAR_EVENT EVT_FROM_PRU0
 
-    // Configure the programmable pointer register for PRU1 by setting c31_pointer[15:0]
-    // field to 0x0000.  This will make C31 point to offset 0x0000 of the DDR memory.
+    // Config CONST_DDR pointer to 0x80000000
+    CONFIG_DDR_RAM
 
-    MOV       r0, 0x00000000
-    MOV       r1, CTPPR_1
-    ST32      r0, r1
+    MOV       r0, 0x0A
+    SBCO      r0, CONST_DDR, 0x00, 4
 
-    MOV       regVal, 0x0A
-    SBCO      regVal, CONST_DDR, 0x00, 4
-
-    // Initialize pointer to INTC registers
-    MOV       regOffset, 0x00000000
-
-    //Generate SYS_EVT
-#ifdef AM33XX
-    MOV       r31.b0, SYS_EVT+16
-#else
-    MOV       r31, SYS_EVT
-#endif
+    //Generate EVT_TO_PRU0
+    TRIGGER_EVENT EVT_TO_PRU0
 
 DONE:
     // Send notification to Host for program completion
-#ifdef AM33XX
-    MOV       r31.b0, PRU1_ARM_INTERRUPT+16
-#else
-    MOV       r31.b0, #PRU1_ARM_INTERRUPT
-#endif
+    TRIGGER_EVENT PRU_TRIGGER_HOST_INTR_1
 
     HALT

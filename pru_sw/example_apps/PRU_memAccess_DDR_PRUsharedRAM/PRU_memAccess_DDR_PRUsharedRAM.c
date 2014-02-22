@@ -70,7 +70,7 @@
 #include <string.h>
 
 // Driver header file
-#include "prussdrv.h"
+#include <prussdrv.h>
 #include <pruss_intc_mapping.h>
 
 /******************************************************************************
@@ -89,8 +89,6 @@
 #define DDR_BASEADDR     0x80000000
 #define OFFSET_DDR	 0x00001000
 #define OFFSET_SHAREDRAM 2048		//equivalent with 0x00002000
-
-#define PRUSS0_SHARED_DATARAM    4
 
 /******************************************************************************
 * Local Typedef Declarations                                                  *
@@ -137,7 +135,7 @@ int main (void)
     prussdrv_init ();
 
     /* Open PRU Interrupt */
-    ret = prussdrv_open(PRU_EVTOUT_0);
+    ret = prussdrv_open( PRU_HOST_INTR_0 );
     if (ret)
     {
         printf("prussdrv_open open failed\n");
@@ -157,9 +155,9 @@ int main (void)
 
     /* Wait until PRU0 has finished execution */
     printf("\tINFO: Waiting for HALT command.\r\n");
-    prussdrv_pru_wait_event (PRU_EVTOUT_0);
+    prussdrv_pru_wait_interrupt (PRU_HOST_INTR_0);
     printf("\tINFO: PRU completed transfer.\r\n");
-    prussdrv_pru_clear_event (PRU_EVTOUT_0, PRU0_ARM_INTERRUPT);
+    prussdrv_pru_reset_event (PRU_TRIGGER_HOST_INTR_0);
 
     /* Check if example passed */
     if ( LOCAL_examplePassed(PRU_NUM) )

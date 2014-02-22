@@ -252,6 +252,14 @@ int prussdrv_init(void)
 int prussdrv_open(unsigned int host_interrupt)
 {
     char name[PRUSS_UIO_PRAM_PATH_LEN];
+
+    /* decrement by 2.  First two hosts are not exported to ARM */
+    host_interrupt -= 2;
+    if (host_interrupt >= NUM_PRU_HOSTIRQS) {
+        DEBUG_PRINTF("Cannot open invalid host interrupt.\n");
+        return -1;
+    }
+
     if (!prussdrv.fd[host_interrupt]) {
         sprintf(name, "/dev/uio%d", host_interrupt);
         prussdrv.fd[host_interrupt] = open(name, O_RDWR | O_SYNC);
@@ -319,7 +327,7 @@ int prussdrv_pru_disable(unsigned int prunum)
 
 }
 
-int prussdrv_pru_write_memory(unsigned int pru_ram_id,
+int prussdrv_pru_write_memory(pru_memory_t pru_ram_id,
                               unsigned int wordoffset,
                               const unsigned int *memarea,
                               unsigned int bytelength)
@@ -362,63 +370,70 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     unsigned int i, mask1, mask2;
 
+    pruintc_io[PRU_INTC_SIPR0_REG >> 2] = 0xFFFFFFFF;
     pruintc_io[PRU_INTC_SIPR1_REG >> 2] = 0xFFFFFFFF;
-    pruintc_io[PRU_INTC_SIPR2_REG >> 2] = 0xFFFFFFFF;
 
+    // clear out all event to channel mappings
     for (i = 0; i < (NUM_PRU_SYS_EVTS + 3) >> 2; i++)
-        pruintc_io[(PRU_INTC_CMR1_REG >> 2) + i] = 0;
-    for (i = 0;
-         ((prussintc_init_data->sysevt_to_channel_map[i].sysevt != -1)
-          && (prussintc_init_data->sysevt_to_channel_map[i].channel !=
-              -1)); i++) {
-        __prussintc_set_cmr(pruintc_io,
-                            prussintc_init_data->sysevt_to_channel_map[i].
-                            sysevt,
-                            prussintc_init_data->sysevt_to_channel_map[i].
-                            channel);
+        pruintc_io[(PRU_INTC_CMR0_REG >> 2) + i] = 0;
+    // set new event to channel mappings
+    for (i = 0; i < NUM_PRU_SYS_EVTS &&
+                (prussintc_init_data->sysevt_to_channel_map[i].sysevt
+                  < NUM_PRU_SYS_EVTS) &&
+                (prussintc_init_data->sysevt_to_channel_map[i].channel
+                  < NUM_PRU_CHANNELS); ++i) {
+        __prussintc_set_cmr(
+          pruintc_io,
+          prussintc_init_data->sysevt_to_channel_map[i].sysevt,
+          prussintc_init_data->sysevt_to_channel_map[i].channel
+        );
     }
+
+    // clear out all channel to host mappings
     for (i = 0; i < (NUM_PRU_HOSTS + 3) >> 2; i++)
-        pruintc_io[(PRU_INTC_HMR1_REG >> 2) + i] = 0;
-    for (i = 0;
-         ((prussintc_init_data->channel_to_host_map[i].channel != -1)
-          && (prussintc_init_data->channel_to_host_map[i].host != -1));
-         i++) {
-
-        __prussintc_set_hmr(pruintc_io,
-                            prussintc_init_data->channel_to_host_map[i].
-                            channel,
-                            prussintc_init_data->channel_to_host_map[i].
-                            host);
+        pruintc_io[(PRU_INTC_HMR0_REG >> 2) + i] = 0;
+    // set new channel to host mappings
+    for (i = 0; i < NUM_PRU_CHANNELS &&
+                (prussintc_init_data->channel_to_host_map[i].channel
+                  < NUM_PRU_CHANNELS) &&
+                (prussintc_init_data->channel_to_host_map[i].host
+                  < NUM_PRU_HOSTS); ++i) {
+        __prussintc_set_hmr(
+          pruintc_io,
+          prussintc_init_data->channel_to_host_map[i].channel,
+          prussintc_init_data->channel_to_host_map[i].host
+        );
     }
 
+    pruintc_io[PRU_INTC_SITR0_REG >> 2] = 0x0;
     pruintc_io[PRU_INTC_SITR1_REG >> 2] = 0x0;
-    pruintc_io[PRU_INTC_SITR2_REG >> 2] = 0x0;
 
 
+    // enable system events
     mask1 = mask2 = 0;
-    for (i = 0; prussintc_init_data->sysevts_enabled[i] != 255; i++) {
+    for (i = 0; i < NUM_PRU_SYS_EVTS &&
+                (prussintc_init_data->sysevts_enabled[i]
+                  < NUM_PRU_SYS_EVTS); ++i) {
         if (prussintc_init_data->sysevts_enabled[i] < 32) {
-            mask1 =
-                mask1 + (1 << (prussintc_init_data->sysevts_enabled[i]));
+            mask1 = mask1 + (1 << (prussintc_init_data->sysevts_enabled[i]));
         } else if (prussintc_init_data->sysevts_enabled[i] < 64) {
-            mask2 =
-                mask2 +
-                (1 << (prussintc_init_data->sysevts_enabled[i] - 32));
+            mask2 = mask2 + (1<< (prussintc_init_data->sysevts_enabled[i] -32));
         } else {
             DEBUG_PRINTF("Error: SYS_EVT%d out of range\n",
-			 prussintc_init_data->sysevts_enabled[i]);
+                         prussintc_init_data->sysevts_enabled[i]);
             return -1;
         }
     }
-    pruintc_io[PRU_INTC_ESR1_REG >> 2] = mask1;
-    pruintc_io[PRU_INTC_SECR1_REG >> 2] = mask1;
-    pruintc_io[PRU_INTC_ESR2_REG >> 2] = mask2;
-    pruintc_io[PRU_INTC_SECR2_REG >> 2] = mask2;
+    pruintc_io[PRU_INTC_ESR0_REG >> 2] = mask1;
+    pruintc_io[PRU_INTC_SECR0_REG >> 2] = mask1;
+    pruintc_io[PRU_INTC_ESR1_REG >> 2] = mask2;
+    pruintc_io[PRU_INTC_SECR1_REG >> 2] = mask2;
 
-    for (i = 0; i < MAX_HOSTS_SUPPORTED; i++)
-        if (prussintc_init_data->host_enable_bitmask & (1 << i)) {
-            pruintc_io[PRU_INTC_HIEISR_REG >> 2] = i;
-        }
+    // enable hosts
+    for (i = 0; i < NUM_PRU_HOSTS &&
+                (prussintc_init_data->hosts_enabled[i] < NUM_PRU_HOSTS); ++i)
+        pruintc_io[PRU_INTC_HIEISR_REG >> 2] =
+          prussintc_init_data->hosts_enabled[i];
 
     pruintc_io[PRU_INTC_GER_REG >> 2] = 0x1;
 
@@ -429,88 +444,140 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
     return 0;
 }
 
-short prussdrv_get_event_to_channel_map( unsigned int eventnum )
-{
+inline short prussdrv_lookup_event_to_channel(
+  const tpruss_intc_initdata *intc_data,
+  unsigned int eventnum
+){
     unsigned int i;
     for (i = 0; i < NUM_PRU_SYS_EVTS &&
-                prussdrv.intc_data.sysevt_to_channel_map[i].sysevt  !=-1 &&
-                prussdrv.intc_data.sysevt_to_channel_map[i].channel !=-1; ++i) {
-        if ( eventnum == prussdrv.intc_data.sysevt_to_channel_map[i].sysevt )
-            return prussdrv.intc_data.sysevt_to_channel_map[i].channel;
+                intc_data->sysevt_to_channel_map[i].sysevt  !=-1 &&
+                intc_data->sysevt_to_channel_map[i].channel !=-1; ++i) {
+        if ( eventnum == intc_data->sysevt_to_channel_map[i].sysevt )
+            return intc_data->sysevt_to_channel_map[i].channel;
     }
     return -1;
 }
 
-short prussdrv_get_channel_to_host_map( unsigned int channel )
+inline short prussdrv_get_event_to_channel_map( unsigned int eventnum )
 {
+    return prussdrv_lookup_event_to_channel( &prussdrv.intc_data, eventnum );
+}
+
+inline short prussdrv_lookup_channel_to_host(
+  const tpruss_intc_initdata *intc_data,
+  unsigned int channel
+) {
     unsigned int i;
     for (i = 0; i < NUM_PRU_CHANNELS &&
-                prussdrv.intc_data.channel_to_host_map[i].channel != -1 &&
-                prussdrv.intc_data.channel_to_host_map[i].host    != -1; ++i) {
-        if ( channel == prussdrv.intc_data.channel_to_host_map[i].channel )
-            /** -2 is because first two host interrupts are reserved
-             * for PRU0 and PRU1 */
-            return prussdrv.intc_data.channel_to_host_map[i].host - 2;
+                intc_data->channel_to_host_map[i].channel != -1 &&
+                intc_data->channel_to_host_map[i].host    != -1; ++i) {
+        if ( channel == intc_data->channel_to_host_map[i].channel )
+            return intc_data->channel_to_host_map[i].host;
     }
     return -1;
 }
 
-short prussdrv_get_event_to_host_map( unsigned int eventnum )
+inline short prussdrv_get_channel_to_host_map( unsigned int channel )
 {
-    short ans = prussdrv_get_event_to_channel_map( eventnum );
-    if (ans < 0) return ans;
-    return prussdrv_get_channel_to_host_map( ans );
+    return prussdrv_lookup_channel_to_host( &prussdrv.intc_data, channel );
 }
 
-int prussdrv_pru_send_event(unsigned int eventnum)
+inline short prussdrv_lookup_event_to_host(
+  const tpruss_intc_initdata *intc_data,
+  unsigned int eventnum
+) {
+    short channel = prussdrv_lookup_event_to_channel( intc_data, eventnum );
+    if (channel < 0) return channel;
+    return prussdrv_lookup_channel_to_host( intc_data, channel );
+}
+
+inline short prussdrv_get_event_to_host_map( unsigned int eventnum )
+{
+    return prussdrv_lookup_event_to_host( &prussdrv.intc_data, eventnum );
+}
+
+inline int prussdrv_pru_send_event(unsigned int eventnum)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     if (eventnum < 32)
-        pruintc_io[PRU_INTC_SRSR1_REG >> 2] = 1 << eventnum;
+        pruintc_io[PRU_INTC_SRSR0_REG >> 2] = 1 << eventnum;
     else
-        pruintc_io[PRU_INTC_SRSR2_REG >> 2] = 1 << (eventnum - 32);
+        pruintc_io[PRU_INTC_SRSR1_REG >> 2] = 1 << (eventnum - 32);
     return 0;
 }
 
-unsigned int prussdrv_pru_wait_event(unsigned int host_interrupt)
+inline int prussdrv_pru_event_status(unsigned int sysevent)
+{
+    unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
+    if (sysevent < 32)
+        return pruintc_io[PRU_INTC_SRSR0_REG >> 2] & (1 << sysevent);
+    else
+        return pruintc_io[PRU_INTC_SRSR1_REG >> 2] & (1 << (sysevent - 32));
+}
+
+inline unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt)
 {
     unsigned int event_count;
-    read(prussdrv.fd[host_interrupt], &event_count, sizeof(int));
+    /*-2 is because the first two host interrupt lines are meant for the PRUs*/
+    read(prussdrv.fd[host_interrupt-2], &event_count, sizeof(int));
     return event_count;
 }
 
-int prussdrv_pru_event_fd(unsigned int host_interrupt)
+inline int prussdrv_pru_interrupt_fd(unsigned int host_interrupt)
 {
+    /* decrement by 2.  First two hosts are not exported to ARM */
+    host_interrupt -= 2;
     if (host_interrupt < NUM_PRU_HOSTIRQS)
         return prussdrv.fd[host_interrupt];
     else
         return -1;
 }
 
-int prussdrv_pru_clear_event(unsigned int host_interrupt, unsigned int sysevent)
+inline unsigned int prussdrv_pru_wait_event(unsigned int sysevent)
+{
+    return prussdrv_pru_wait_interrupt(
+        prussdrv_get_event_to_host_map(sysevent)
+    );
+}
+
+inline int prussdrv_pru_clear_event(unsigned int sysevent)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     if (sysevent < 32)
-        pruintc_io[PRU_INTC_SECR1_REG >> 2] = 1 << sysevent;
+        pruintc_io[PRU_INTC_SECR0_REG >> 2] = 1 << sysevent;
     else
-        pruintc_io[PRU_INTC_SECR2_REG >> 2] = 1 << (sysevent - 32);
-
-    // Re-enable the host interrupt.  Note that we must do this _after_ the
-    // system event has been cleared so as to not re-tigger the interrupt line.
-    // See Section 6.4.9 of Reference manual about HIEISR register.
-    // The +2 is because the first two host interrupts are reserved for
-    // PRU0 and PRU1.
-    pruintc_io[PRU_INTC_HIEISR_REG >> 2] = host_interrupt+2;
+        pruintc_io[PRU_INTC_SECR1_REG >> 2] = 1 << (sysevent - 32);
     return 0;
 }
 
-int prussdrv_pru_send_wait_clear_event(unsigned int send_eventnum,
-                                       unsigned int host_interrupt,
+inline int prussdrv_pru_reset_interrupt(unsigned int host_interrupt)
+{
+    unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
+    // Re-enable the host interrupt.  Note that we must generally do this
+    // _after_ the system event has been cleared so as to not re-tigger the
+    // interrupt line.  See Section 6.4.9 of Reference manual about HIEISR
+    // register.
+    pruintc_io[PRU_INTC_HIEISR_REG >> 2] = host_interrupt;
+    return 0;
+}
+
+int prussdrv_pru_reset_event(unsigned int sysevent)
+{
+    prussdrv_pru_clear_event(sysevent);
+    prussdrv_pru_reset_interrupt(
+        prussdrv_get_event_to_host_map(sysevent)
+    );
+    return 0;
+}
+
+int prussdrv_pru_send_wait_reset_event(unsigned int send_eventnum,
                                        unsigned int ack_eventnum)
 {
+    unsigned int host_interrupt = prussdrv_get_event_to_host_map(ack_eventnum);
     prussdrv_pru_send_event(send_eventnum);
     prussdrv_pru_wait_event(host_interrupt);
-    prussdrv_pru_clear_event(host_interrupt, ack_eventnum);
+    prussdrv_pru_clear_event(ack_eventnum);
+    prussdrv_pru_reset_interrupt(host_interrupt);
     return 0;
 
 }
@@ -537,7 +604,7 @@ unsigned int prussdrv_extmem_size(void)
     return prussdrv.extram_map_size;
 }
 
-int prussdrv_map_prumem(unsigned int pru_ram_id, void **address)
+int prussdrv_map_prumem(pru_memory_t pru_ram_id, void **address)
 {
     switch (pru_ram_id) {
     case PRUSS0_PRU0_DATARAM:
@@ -558,7 +625,7 @@ int prussdrv_map_prumem(unsigned int pru_ram_id, void **address)
     return 0;
 }
 
-int prussdrv_map_peripheral_io(unsigned int per_id, void **address)
+int prussdrv_map_peripheral_io(pru_peripheral_t per_id, void **address)
 {
     if (prussdrv.version != PRUSS_V2)
         return -1;
@@ -622,19 +689,19 @@ void *prussdrv_get_virt_addr(unsigned int phyaddr)
         && (phyaddr <
             prussdrv.pru0_dataram_phy_base + prussdrv.pruss_map_size)) {
         address =
-            (void *) ((unsigned int) prussdrv.pru0_dataram_base +
+            (void *) ((unsigned long) prussdrv.pru0_dataram_base +
                       (phyaddr - prussdrv.pru0_dataram_phy_base));
     } else if ((phyaddr >= prussdrv.l3ram_phys_base)
                && (phyaddr <
                    prussdrv.l3ram_phys_base + prussdrv.l3ram_map_size)) {
         address =
-            (void *) ((unsigned int) prussdrv.l3ram_base +
+            (void *) ((unsigned long) prussdrv.l3ram_base +
                       (phyaddr - prussdrv.l3ram_phys_base));
     } else if ((phyaddr >= prussdrv.extram_phys_base)
                && (phyaddr <
                    prussdrv.extram_phys_base + prussdrv.extram_map_size)) {
         address =
-            (void *) ((unsigned int) prussdrv.extram_base +
+            (void *) ((unsigned long) prussdrv.extram_base +
                       (phyaddr - prussdrv.extram_phys_base));
     }
     return address;
@@ -665,7 +732,7 @@ int prussdrv_exec_program(int prunum, const char *filename)
     fPtr = fopen(filename, "rb");
     if (fPtr == NULL) {
         DEBUG_PRINTF("File %s open failed\n", filename);
-	return -1;
+        return -1;
     } else {
         DEBUG_PRINTF("File %s open passed\n", filename);
     }
@@ -684,8 +751,8 @@ int prussdrv_exec_program(int prunum, const char *filename)
     if (fileSize !=
         fread((unsigned char *) fileDataArray, 1, fileSize, fPtr)) {
         DEBUG_PRINTF("WARNING: File Size mismatch\n");
-	fclose(fPtr);
-	return -1;
+        fclose(fPtr);
+        return -1;
     }
 
     fclose(fPtr);
@@ -695,7 +762,7 @@ int prussdrv_exec_program(int prunum, const char *filename)
 
 int prussdrv_exec_code(int prunum, const unsigned int *code, int codelen)
 {
-    unsigned int pru_ram_id;
+    pru_memory_t pru_ram_id;
 
     if (prunum == 0)
         pru_ram_id = PRUSS0_PRU0_IRAM;

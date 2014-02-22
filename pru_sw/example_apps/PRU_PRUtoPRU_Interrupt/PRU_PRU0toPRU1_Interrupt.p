@@ -60,57 +60,48 @@
 .origin 0
 .entrypoint PRU0_TO_PRU1_INTERRUPT
 
-#include "PRU_PRUtoPRU_Interrupt.hp"
+#include <prucode.hp>
 
 
 // ***************************************
 // *       Local Macro definitions       *
 // ***************************************
 
-#define SYS_EVT         PRU0_PRU1_INTERRUPT
-#define SYS_EVT_PRU1    PRU1_PRU0_INTERRUPT
+#define EVT_FROM_ARM       PRU_TRIGGER1_R31_31 // event from arm
+#define EVT_FROM_ARM_BIT   31                  // r31:bit from arm
+#define EVT_TO_PRU1        PRU_TRIGGER0_R31_30 // event to pru1
+#define EVT_FROM_PRU1      PRU_TRIGGER0_R31_31 // event from pru1
+#define EVT_FROM_PRU1_BIT  31                  // r31:bit from pru1
 
 
 PRU0_TO_PRU1_INTERRUPT:
 
-#ifdef AM33XX
     // Enable OCP master port
-    LBCO      r0, CONST_PRUCFG, 4, 4
-    CLR       r0, r0, 4         // Clear SYSCFG[STANDBY_INIT] to enable OCP master port
-    SBCO      r0, CONST_PRUCFG, 4, 4
-#endif
+    CONFIG_OCP
 
-    //Generate SYS_EVT
-#ifdef AM33XX
-    MOV       r31.b0, SYS_EVT+16
-#else
-    MOV       r31, SYS_EVT
-#endif
+    // Poll for receipt of interrupt on host 1 (from ARM)
+BEGIN:
+    WBS       r31, EVT_FROM_ARM_BIT
+    CLEAR_EVENT EVT_FROM_ARM
 
-    // Poll for receipt of interrupt on host 1
+    //Generate EVT_TO_PRU1
+    TRIGGER_EVENT EVT_TO_PRU1
+
+    // Poll for receipt of interrupt on host 1 (from PRU1)
 POLL:
-    WBS       eventStatus, #30
+    WBS       r31, EVT_FROM_PRU1_BIT
 
 DONE:
-    // Configure the programmable pointer register for PRU0 by setting c31_pointer[31:16]
-    // field to 0x0000.  This will make C31 point to 0x80001000 (DDR memory).
-    MOV       r0, 0x00000000
-    MOV       r1, CTPPR_1
-    ST32      r0, r1
+    // Config CONST_DDR pointer to 0x80000000
+    CONFIG_DDR_RAM
 
-    MOV       regVal, 0x0B
-    SBCO      regVal, CONST_DDR, 0x04, 4
+    MOV       r0, 0x0B
+    SBCO      r0, CONST_DDR, 0x04, 4
 
     // Clear the status of the interrupt
-    LDI	      regVal.w2,	0x0000
-    LDI	      regVal.w0,	SYS_EVT_PRU1
-    SBCO      regVal,	CONST_PRUSSINTC,	SICR_OFFSET,        4
+    CLEAR_EVENT EVT_FROM_PRU1
 
     // Send notification to Host for program completion
-#ifdef AM33XX
-    MOV       r31.b0, PRU0_ARM_INTERRUPT+16
-#else
-    MOV       R31.b0, PRU0_ARM_INTERRUPT
-#endif
+    TRIGGER_EVENT PRU_TRIGGER_HOST_INTR_0
 
     HALT

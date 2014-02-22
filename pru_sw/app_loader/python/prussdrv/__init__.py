@@ -6,4 +6,4 @@ import errors
 import clib
 from clib import *
 import interrupt
-from interrupt import InterruptHandler
+from executor import *

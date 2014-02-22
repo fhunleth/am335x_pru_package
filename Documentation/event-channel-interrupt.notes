@@ -1,0 +1,145 @@
+This file represents some notes about the current event/channel/interrupt
+mapping and some of the basics of Interrupt handling with the PRU INTC.
+
+
+
+
+Reorganization/Renaming for events/channels/hosts
+---------------------------------------------------
+As indicated in the datasheet, the AM335X has a versatile interrupt controller
+that mediates both the interrupt signaling between the ARM processor and both of
+the PRU processors as well as the signaling between each of the PRU processors.
+
+This interrupt controller supports the conveyance of 64 different event signals
+ultimately to either interrupt lines on the ARM processor or to bits 30:31 of
+the r31 register of PRU0/1 simultaneously.  The conveyance of these signals is
+done via intermediate prioritization pipes known as channels.  Thus, we have
+events, channels, and interrupt lines otherwise known as host interrupts:
+  event:
+    The source of a signal which must then be passed through the interrupt
+    controller to its final destination point.
+  channel:
+    The intermediate aggregation point of all signals that share similar
+    priority.  All signals must be routed through (only) one of the ten channels
+    before final delivery.
+  host_interrupt:
+    The final destination of a signal.  This is the access point of user code,
+    either executing on the ARM or executing on one of PRU0/1.
+
+
+Interrupt Priority:
+  First:  channel (lower channel is higher priority)
+  Second: event   (lower event is higher priority)
+
+Events:
+  Of the 64 events that feed into the interrupt controller, 16 of them are
+  intended for general use/signalling with the PRU.  These events are referred
+  directly via the defines from <pruss_intc_mapping.h>:
+    PRU_EVENT_0
+    PRU_EVENT_1
+    PRU_EVENT_2
+    PRU_EVENT_3
+    PRU_EVENT_4
+    PRU_EVENT_5
+    PRU_EVENT_6
+    PRU_EVENT_7
+    PRU_EVENT_8
+    PRU_EVENT_9
+    PRU_EVENT_10
+    PRU_EVENT_11
+    PRU_EVENT_12
+    PRU_EVENT_13
+    PRU_EVENT_14
+    PRU_EVENT_15
+
+Channels:
+  Each of the 16 PRU events generate signals that can be routed to any one of
+  ten prioritized channels denoted as
+    CHANNEL0
+    CHANNEL1
+    CHANNEL2
+    CHANNEL3
+    CHANNEL4
+    CHANNEL5
+    CHANNEL6
+    CHANNEL7
+    CHANNEL8
+    CHANNEL9
+
+
+Host Interrupts:
+  With events grouped into channels, event signals can be delivered to host
+  interrupt lines after assigning channels to any one of ten host interrupts:
+    PRU_HOST_0
+    PRU_HOST_1
+    PRU_HOST_2
+    PRU_HOST_3
+    PRU_HOST_4
+    PRU_HOST_5
+    PRU_HOST_6
+    PRU_HOST_7
+    PRU_HOST_8
+    PRU_HOST_9
+
+  Not all host interrupts are exported to each of the processors.  The host
+  interrupts PRU_HOST_[0..1] are dedicated to signaling either/both of PRU0/1
+  while PRU_HOST_[2..9] are exported to the interrupt lines of the ARM
+  processor. 
+    PRU_HOST_0:
+      Connected directly to bit 30 of both r31 registers of each PRU.
+    PRU_HOST_1:
+      Connected directly to bit 31 of both r31 registers of each PRU.
+
+    Generally, for clarity, one should use the two aliases for PRU_HOST_[0..1]:
+      PRU_INTERRUPT_R31_30    <-->  PRU_HOST_0
+      PRU_INTERRUPT_R31_31    <-->  PRU_HOST_1
+
+    PRU_HOST_[2..9]:
+    Similarly, for clarity in referring to for host interrupts PRU_HOST_[2..9]
+    exported to the ARM processor, one should use the aliases:
+      PRU_HOST_INTR_0
+      PRU_HOST_INTR_1
+      PRU_HOST_INTR_2
+      PRU_HOST_INTR_3
+      PRU_HOST_INTR_4
+      PRU_HOST_INTR_5
+      PRU_HOST_INTR_6
+      PRU_HOST_INTR_7
+
+
+A default set of event/channel/host_interrupt mappings is provided that may
+be sufficient for many development cases.
+Default signal route/mapping:
+    Event           Channel         Host Interrupt
+-------------------------------------------------------
+  PRU_EVENT_0 |-->  CHANNEL0  --> PRU_INTERRUPT_R31_30
+  PRU_EVENT_1 |
+
+  PRU_EVENT_2 |-->  CHANNEL1  --> PRU_INTERRUPT_R31_31
+  PRU_EVENT_3 |
+
+  PRU_EVENT_4  -->  CHANNEL2  --> PRU_HOST_INTR_0
+  PRU_EVENT_5  -->  CHANNEL3  --> PRU_HOST_INTR_1
+
+For convenience, the following defines are useful when using this default signal
+route/mapping:
+  #define PRU_TRIGGER0_R31_30     PRU_EVENT_0
+  #define PRU_TRIGGER1_R31_30     PRU_EVENT_1
+  #define PRU_TRIGGER0_R31_31     PRU_EVENT_2
+  #define PRU_TRIGGER1_R31_31     PRU_EVENT_3
+  #define PRU_TRIGGER_HOST_INTR_0 PRU_EVENT_4
+  #define PRU_TRIGGER_HOST_INTR_1 PRU_EVENT_5
+
+
+
+Other notes:
+  If an event is mapped into a host interrupt and is triggered, the interrupt
+  handler can verify that the particular event was the cause of the interrupt.
+  For an interrupt service handler on the ARM processor, this can easily be done
+  via the prussdrv c-library function call:
+    prussdrv_pru_event_status(event)
+  For code executing on either of PRU0/1, event status can be checked via the
+  SECR[0-1] registers (see section 6.4.14 in the PRU-ICSS Reference Guide).
+  For the case of when two or more events may simultaneously be activated, see
+  the Nesting and Interrupt Prioritization topics in the PRU-ICSS Reference
+  Guide.

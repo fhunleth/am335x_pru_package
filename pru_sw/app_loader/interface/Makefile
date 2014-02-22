@@ -26,6 +26,7 @@ RELCFLAGS = -O3 -mtune=cortex-a8 -march=armv7-a
 SOURCES = $(wildcard *.c)
 
 PUBLIC_HDRS = $(wildcard $(INCLUDEDIR)/*.h)
+PUBLIC_PRUCODE_HDRS = $(wildcard $(INCLUDEDIR)/*.hp)
 PRIVATE_HDRS = $(wildcard *.h)
 HEADERS = $(PUBLIC_HDRS) $(PRIVATE_HDRS)
 
@@ -42,7 +43,7 @@ install: release
 	install -m 0755 -d $(PREFIX)/lib
 	install -m 0755 -d $(PREFIX)/include
 	install -m 0644 $(LIBDIR)/* $(PREFIX)/lib
-	install -m 0644 $(PUBLIC_HDRS) $(PREFIX)/include
+	install -m 0644 $(PUBLIC_HDRS) $(PUBLIC_PRUCODE_HDRS) $(PREFIX)/include
 
 release:	$(RELTARGET)
 
