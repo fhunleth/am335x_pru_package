@@ -370,11 +370,11 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     unsigned int i, mask1, mask2;
 
+    pruintc_io[PRU_INTC_SIPR0_REG >> 2] = 0xFFFFFFFF;
     pruintc_io[PRU_INTC_SIPR1_REG >> 2] = 0xFFFFFFFF;
-    pruintc_io[PRU_INTC_SIPR2_REG >> 2] = 0xFFFFFFFF;
 
     for (i = 0; i < (NUM_PRU_SYS_EVTS + 3) >> 2; i++)
-        pruintc_io[(PRU_INTC_CMR1_REG >> 2) + i] = 0;
+        pruintc_io[(PRU_INTC_CMR0_REG >> 2) + i] = 0;
     for (i = 0;
          ((prussintc_init_data->sysevt_to_channel_map[i].sysevt != -1)
           && (prussintc_init_data->sysevt_to_channel_map[i].channel !=
@@ -399,8 +399,8 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
                             host);
     }
 
+    pruintc_io[PRU_INTC_SITR0_REG >> 2] = 0x0;
     pruintc_io[PRU_INTC_SITR1_REG >> 2] = 0x0;
-    pruintc_io[PRU_INTC_SITR2_REG >> 2] = 0x0;
 
 
     mask1 = mask2 = 0;
@@ -418,10 +418,10 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
             return -1;
         }
     }
-    pruintc_io[PRU_INTC_ESR1_REG >> 2] = mask1;
-    pruintc_io[PRU_INTC_SECR1_REG >> 2] = mask1;
-    pruintc_io[PRU_INTC_ESR2_REG >> 2] = mask2;
-    pruintc_io[PRU_INTC_SECR2_REG >> 2] = mask2;
+    pruintc_io[PRU_INTC_ESR0_REG >> 2] = mask1;
+    pruintc_io[PRU_INTC_SECR0_REG >> 2] = mask1;
+    pruintc_io[PRU_INTC_ESR1_REG >> 2] = mask2;
+    pruintc_io[PRU_INTC_SECR1_REG >> 2] = mask2;
 
     for (i = 0; prussintc_init_data->hosts_enabled[i] < NUM_PRU_HOSTS; ++i)
         pruintc_io[PRU_INTC_HIEISR_REG >> 2] =
@@ -492,9 +492,9 @@ inline int prussdrv_pru_send_event(unsigned int eventnum)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     if (eventnum < 32)
-        pruintc_io[PRU_INTC_SRSR1_REG >> 2] = 1 << eventnum;
+        pruintc_io[PRU_INTC_SRSR0_REG >> 2] = 1 << eventnum;
     else
-        pruintc_io[PRU_INTC_SRSR2_REG >> 2] = 1 << (eventnum - 32);
+        pruintc_io[PRU_INTC_SRSR1_REG >> 2] = 1 << (eventnum - 32);
     return 0;
 }
 
@@ -502,9 +502,9 @@ inline int prussdrv_pru_event_status(unsigned int sysevent)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     if (sysevent < 32)
-        return pruintc_io[PRU_INTC_SRSR1_REG >> 2] & (1 << sysevent);
+        return pruintc_io[PRU_INTC_SRSR0_REG >> 2] & (1 << sysevent);
     else
-        return pruintc_io[PRU_INTC_SRSR2_REG >> 2] & (1 << (sysevent - 32));
+        return pruintc_io[PRU_INTC_SRSR1_REG >> 2] & (1 << (sysevent - 32));
 }
 
 inline unsigned int prussdrv_pru_wait_interrupt(unsigned int host_interrupt)
@@ -536,9 +536,9 @@ inline int prussdrv_pru_clear_event(unsigned int sysevent)
 {
     unsigned int *pruintc_io = (unsigned int *) prussdrv.intc_base;
     if (sysevent < 32)
-        pruintc_io[PRU_INTC_SECR1_REG >> 2] = 1 << sysevent;
+        pruintc_io[PRU_INTC_SECR0_REG >> 2] = 1 << sysevent;
     else
-        pruintc_io[PRU_INTC_SECR2_REG >> 2] = 1 << (sysevent - 32);
+        pruintc_io[PRU_INTC_SECR1_REG >> 2] = 1 << (sysevent - 32);
     return 0;
 }
 
