@@ -373,45 +373,51 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
     pruintc_io[PRU_INTC_SIPR0_REG >> 2] = 0xFFFFFFFF;
     pruintc_io[PRU_INTC_SIPR1_REG >> 2] = 0xFFFFFFFF;
 
+    // clear out all event to channel mappings
     for (i = 0; i < (NUM_PRU_SYS_EVTS + 3) >> 2; i++)
         pruintc_io[(PRU_INTC_CMR0_REG >> 2) + i] = 0;
-    for (i = 0;
-         ((prussintc_init_data->sysevt_to_channel_map[i].sysevt != -1)
-          && (prussintc_init_data->sysevt_to_channel_map[i].channel !=
-              -1)); i++) {
-        __prussintc_set_cmr(pruintc_io,
-                            prussintc_init_data->sysevt_to_channel_map[i].
-                            sysevt,
-                            prussintc_init_data->sysevt_to_channel_map[i].
-                            channel);
+    // set new event to channel mappings
+    for (i = 0; i < NUM_PRU_SYS_EVTS &&
+                (prussintc_init_data->sysevt_to_channel_map[i].sysevt
+                  < NUM_PRU_SYS_EVTS) &&
+                (prussintc_init_data->sysevt_to_channel_map[i].channel
+                  < NUM_PRU_CHANNELS); ++i) {
+        __prussintc_set_cmr(
+          pruintc_io,
+          prussintc_init_data->sysevt_to_channel_map[i].sysevt,
+          prussintc_init_data->sysevt_to_channel_map[i].channel
+        );
     }
+
+    // clear out all channel to host mappings
     for (i = 0; i < (NUM_PRU_HOSTS + 3) >> 2; i++)
         pruintc_io[(PRU_INTC_HMR0_REG >> 2) + i] = 0;
-    for (i = 0;
-         ((prussintc_init_data->channel_to_host_map[i].channel != -1)
-          && (prussintc_init_data->channel_to_host_map[i].host != -1));
-         i++) {
-
-        __prussintc_set_hmr(pruintc_io,
-                            prussintc_init_data->channel_to_host_map[i].
-                            channel,
-                            prussintc_init_data->channel_to_host_map[i].
-                            host);
+    // set new channel to host mappings
+    for (i = 0; i < NUM_PRU_CHANNELS &&
+                (prussintc_init_data->channel_to_host_map[i].channel
+                  < NUM_PRU_CHANNELS) &&
+                (prussintc_init_data->channel_to_host_map[i].host
+                  < NUM_PRU_HOSTS); ++i) {
+        __prussintc_set_hmr(
+          pruintc_io,
+          prussintc_init_data->channel_to_host_map[i].channel,
+          prussintc_init_data->channel_to_host_map[i].host
+        );
     }
 
     pruintc_io[PRU_INTC_SITR0_REG >> 2] = 0x0;
     pruintc_io[PRU_INTC_SITR1_REG >> 2] = 0x0;
 
 
+    // enable system events
     mask1 = mask2 = 0;
-    for (i = 0; prussintc_init_data->sysevts_enabled[i] != 255; i++) {
+    for (i = 0; i < NUM_PRU_SYS_EVTS &&
+                (prussintc_init_data->sysevts_enabled[i]
+                  < NUM_PRU_SYS_EVTS); ++i) {
         if (prussintc_init_data->sysevts_enabled[i] < 32) {
-            mask1 =
-                mask1 + (1 << (prussintc_init_data->sysevts_enabled[i]));
+            mask1 = mask1 + (1 << (prussintc_init_data->sysevts_enabled[i]));
         } else if (prussintc_init_data->sysevts_enabled[i] < 64) {
-            mask2 =
-                mask2 +
-                (1 << (prussintc_init_data->sysevts_enabled[i] - 32));
+            mask2 = mask2 + (1<< (prussintc_init_data->sysevts_enabled[i] -32));
         } else {
             DEBUG_PRINTF("Error: SYS_EVT%d out of range\n",
                          prussintc_init_data->sysevts_enabled[i]);
@@ -423,7 +429,9 @@ int prussdrv_pruintc_init(const tpruss_intc_initdata *prussintc_init_data)
     pruintc_io[PRU_INTC_ESR1_REG >> 2] = mask2;
     pruintc_io[PRU_INTC_SECR1_REG >> 2] = mask2;
 
-    for (i = 0; prussintc_init_data->hosts_enabled[i] < NUM_PRU_HOSTS; ++i)
+    // enable hosts
+    for (i = 0; i < NUM_PRU_HOSTS &&
+                (prussintc_init_data->hosts_enabled[i] < NUM_PRU_HOSTS); ++i)
         pruintc_io[PRU_INTC_HIEISR_REG >> 2] =
           prussintc_init_data->hosts_enabled[i];
 

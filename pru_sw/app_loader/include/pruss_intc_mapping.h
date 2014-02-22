@@ -183,7 +183,7 @@
     PRU_TRIGGER1_R31_31,                        \
     PRU_TRIGGER_HOST_INTR_0,                    \
     PRU_TRIGGER_HOST_INTR_1,                    \
-    (char)-1  },                                \
+    -1 },                                       \
   { /* event to channel mapping */              \
     {PRU_TRIGGER0_R31_30,     CHANNEL0},        \
     {PRU_TRIGGER1_R31_30,     CHANNEL0},        \

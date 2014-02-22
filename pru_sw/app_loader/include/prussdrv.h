@@ -83,26 +83,29 @@ extern "C" {
 
 
     typedef struct __sysevt_to_channel_map {
-        short sysevt;
-        short channel;
+        unsigned short sysevt;
+        unsigned short channel;
     } tsysevt_to_channel_map;
     typedef struct __channel_to_host_map {
-        short channel;
-        short host;
+        unsigned short channel;
+        unsigned short host;
     } tchannel_to_host_map;
     typedef struct __pruss_intc_initdata {
         //Enabled SYSEVTs - Range:0..63
-        //{-1} indicates end of list
-        char sysevts_enabled[NUM_PRU_SYS_EVTS];
+        //-1 or >=NUM_PRU_SYS_EVTS indicates end of list
+        unsigned short sysevts_enabled[NUM_PRU_SYS_EVTS];
         //SysEvt to Channel map. SYSEVTs - Range:0..63 Channels -Range: 0..9
-        //{-1, -1} indicates end of list
+        //{-1, -1} or {>=NUM_PRU_SYS_EVTS, >=NUM_PRU_CHANNELS}
+        // indicates end of list
         tsysevt_to_channel_map sysevt_to_channel_map[NUM_PRU_SYS_EVTS];
         //Channel to Host map.Channels -Range: 0..9  HOSTs - Range:0..9
-        //{-1, -1} indicates end of list
+        //{-1, -1}  or {>=NUM_PRU_CHANNELS, >=NUM_PRU_HOSTS}
+        // indicates end of list
         tchannel_to_host_map channel_to_host_map[NUM_PRU_CHANNELS];
         //Enabled Host interrupt lines
         //Host0-Host9 {Host0/1:PRU0/1, Host2..9 : PRU_HOST_INTR_0..7}
-        unsigned int hosts_enabled[NUM_PRU_HOSTS];
+        //-1 or >=NUM_PRU_HOSTS indicates end of list
+        unsigned short hosts_enabled[NUM_PRU_HOSTS];
     } tpruss_intc_initdata;
 
     int prussdrv_init(void);
@@ -140,8 +143,10 @@ extern "C" {
     /** Lookup, from the specified interrupt controller configuration, which
      * channel a given event should be mapped to.
      */
-    short prussdrv_lookup_event_to_channel( const tpruss_intc_initdata *intc_data,
-                                            unsigned int eventnum );
+    short prussdrv_lookup_event_to_channel(
+      const tpruss_intc_initdata *intc_data,
+      unsigned int eventnum
+    );
 
     /** Find and return the host interrupt line a specified channel is mapped
      * to.  Note that this only searches for the first host interrupt line
@@ -155,8 +160,10 @@ extern "C" {
     /** Lookup, from the specified interrupt controller configuration, which
      * host interrupt line a given channel should be mapped to.
      */
-    short prussdrv_lookup_channel_to_host( const tpruss_intc_initdata *intc_data,
-                                           unsigned int channel );
+    short prussdrv_lookup_channel_to_host(
+      const tpruss_intc_initdata *intc_data,
+      unsigned int channel
+    );
 
     /** Find and return the host interrupt line a specified event is mapped
      * to.  This first finds the intermediate channel and then the host.
@@ -168,8 +175,10 @@ extern "C" {
     /** Lookup, from the specified interrupt controller configuration, which
      * host interrupt line a given event should be mapped to.
      */
-    short prussdrv_lookup_event_to_host( const tpruss_intc_initdata *intc_data,
-                                         unsigned int eventnum );
+    short prussdrv_lookup_event_to_host(
+      const tpruss_intc_initdata *intc_data,
+      unsigned int eventnum
+    );
 
     int prussdrv_map_l3mem(void **address);
 
